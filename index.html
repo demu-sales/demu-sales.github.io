@@ -5551,12 +5551,16 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
 
   function renderFollow(){
     var all = followItems;
+    var arr = followFiltered();
     function cnt(st){ var n = 0; all.forEach(function(x){ if(x.st === st) n++; }); return n; }
     var sumQ = 0, sumW = 0;
     all.forEach(function(x){ if(x.st === "sent" || x.st === "won") sumQ += (x.amount || 0); if(x.st === "won") sumW += (x.amount || 0); });
     var stat = document.getElementById("followStat");
     if(stat){
-      stat.innerHTML = '共 <b>' + all.length + '</b> 条 ｜ 草稿 <b>' + cnt("draft") + '</b> · 已发出 <b>' + cnt("sent")
+      var onFilter = (followState.st !== "all" || followState.src !== "all" || String(followState.q || "").trim() !== "");
+      // 有筛选时先报"当前筛选命中几条"，再报全局概览——否则筛选后看到"共 N 条"会与列表行数对不上
+      stat.innerHTML = (onFilter ? '当前筛选命中 <b>' + arr.length + '</b> 条 ｜ ' : '')
+        + '全部 <b>' + all.length + '</b> 条：草稿 <b>' + cnt("draft") + '</b> · 已发出 <b>' + cnt("sent")
         + '</b> · 已成交 <b>' + cnt("won") + '</b> · 已流失 <b>' + cnt("lost") + '</b> ｜ 已报价金额 <b>¥' + followMoney(sumQ) + '</b>'
         + (sumW > 0 ? '　已成交金额 <b>¥' + followMoney(sumW) + '</b>' : '');
     }
@@ -5576,7 +5580,6 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
         }).join("");
     }
 
-    var arr = followFiltered();
     var body = document.getElementById("followBody");
     if(!arr.length){
       body.innerHTML = '<div class="kb-empty">' + (all.length
