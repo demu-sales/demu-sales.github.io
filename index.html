@@ -589,6 +589,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .kb-table td.r{text-align:right;white-space:nowrap;font-weight:700;color:var(--primary-700)}
 .kb-table td.ser{font-size:12px;color:var(--ink-soft)}
 .kb-table td.cert-dt{white-space:nowrap;font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.kb-table td.cert-cat{white-space:nowrap;font-size:12.5px;color:var(--ink-soft)}
 .kb-table .varies{font-size:11px;color:var(--ink-mute)}
 .kb-empty{padding:30px;text-align:center;color:var(--ink-mute);font-size:13px;background:var(--surface);border:1px dashed var(--line);border-radius:14px}
 .kb-rules{background:linear-gradient(180deg,rgba(200,160,60,.10),transparent 70%);border:1px dashed rgba(200,160,60,.45);border-radius:14px;padding:14px 18px}
@@ -5424,7 +5425,8 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
         + ((certFail || noData)
             ? '还没有认证文件。<br><br>把 PDF 或图片放进站点目录的 <b>certs/</b> 文件夹，<br>'
               + '文件名按 <b>名称__类别__关联系列</b> 命名，例如：<br>'
-              + '<b>CE-EMC认证__认证证书__迎春,春暖.pdf</b><br>'
+              + '<b>迎春-带线-2023010201534879__3C证书__迎春.pdf</b><br>'
+              + '类别固定为：<b>3C证书 / 试验报告 / 外贸证书 / 公司证书</b><br>'
               + '然后运行一次「一键部署」，清单会自动生成，这里就会显示出来。'
             : '没有匹配的认证文件，换个关键词或类别试试。')
         + '</div>';
@@ -5450,7 +5452,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
         + '</div>'
         + (img ? '<a class="cert-body-preview" href="' + escAttr(url) + '" target="_blank" rel="noopener"><img loading="lazy" src="' + escAttr(url) + '" alt="' + escAttr(it.name) + '"></a>' : '')
         + '</td>'
-        + '<td>' + escHtml(it.cat || "未分类") + '</td>'
+        + '<td class="cert-cat">' + escHtml(it.cat || "未分类") + '</td>'
         + '<td class="ser">' + (sers.length ? escHtml(sers.join("、")) : '通用') + '</td>'
         + '<td class="cert-dt">' + certSize(it.size) + '</td>'
         + '<td class="cert-dt">' + escHtml(it.date || "") + '</td>'
