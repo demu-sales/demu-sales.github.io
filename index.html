@@ -584,6 +584,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .kb-cat-head small{font-size:11.5px;font-weight:600;color:var(--ink-mute)}
 .kb-table{width:100%;border-collapse:collapse;font-size:13px}
 #certsBody .kb-cat{overflow-x:auto;overflow-y:hidden}   /* 兜底：表格比容器宽时允许滑动，绝不裁掉「操作」列 */
+/* 真根因：默认 table-layout:auto 下百分比列宽只是"建议值"，单元格内容的最小宽度会顶开列宽，
+   导致表宽 1131px > 容器 1098px、「操作」列被裁。改为 fixed 让列宽真正生效。 */
+#certsBody .kb-table{table-layout:fixed}
+#certsBody .cert-file{min-width:0}                      /* flex 子项默认可被内容撑开，必须放开收缩 */
+#certsBody .cert-nm{min-width:0;overflow:hidden}
+#certsBody .cert-nm span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#certsBody .kb-table td{overflow-wrap:anywhere}
 .kb-table th,.kb-table td{padding:8px 16px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 .kb-table th{font-size:11.5px;font-weight:700;color:var(--ink-mute);background:var(--bg,#fff)}
 .kb-table tr:last-child td{border-bottom:0}
