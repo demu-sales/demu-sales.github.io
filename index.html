@@ -583,6 +583,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .kb-cat-head{padding:11px 16px;background:var(--surface-2);border-bottom:1px solid var(--line);font-size:14px;font-weight:800;color:var(--primary-700);display:flex;justify-content:space-between;align-items:center}
 .kb-cat-head small{font-size:11.5px;font-weight:600;color:var(--ink-mute)}
 .kb-table{width:100%;border-collapse:collapse;font-size:13px}
+#certsBody .kb-cat{overflow-x:auto;overflow-y:hidden}   /* 兜底：表格比容器宽时允许滑动，绝不裁掉「操作」列 */
 .kb-table th,.kb-table td{padding:8px 16px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 .kb-table th{font-size:11.5px;font-weight:700;color:var(--ink-mute);background:var(--bg,#fff)}
 .kb-table tr:last-child td{border-bottom:0}
@@ -5438,8 +5439,8 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       + (certState.series !== "all" ? '　系列：<b>' + escHtml(certState.series) + '</b>' : '')
       + (certState.q ? '　关键词：<b>' + escHtml(certState.q) + '</b>' : '') + '</div>';
     html += '<div class="kb-cat"><table class="kb-table"><thead><tr>'
-      + '<th style="width:46%">认证文件</th><th style="width:13%">类别</th><th style="width:15%">关联系列</th>'
-      + '<th style="width:9%">大小</th><th style="width:11%">更新</th><th class="r">操作</th>'
+      + '<th style="width:38%">认证文件</th><th style="width:9%">类别</th><th style="width:13%">关联系列</th>'
+      + '<th style="width:7%">大小</th><th style="width:8%">更新</th><th class="r" style="width:25%">操作</th>'
       + '</tr></thead><tbody>';
     arr.forEach(function(it, i){
       var url = it._local || certUrl(it.file);
