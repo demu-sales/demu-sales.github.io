@@ -5544,7 +5544,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       if(followState.st !== "all" && it.st !== followState.st) return false;
       if(followState.src !== "all" && it.src !== followState.src) return false;
       if(!nq) return true;
-      var hay = normRegion(normWord([it.customer, it.contact, it.seriesName, it.summary, it.profile, it.note, it.amount].join(" ")));
+      var hay = normRegion(normWord([it.customer, it.contact, it.seriesName, it.summary, it.profile, it.note, followMoney(it.amount), it.amount].join(" ")));
       return hay.indexOf(nq) > -1;
     });
   }
@@ -5651,16 +5651,16 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
 
   function openFollowView(){
     if(!followView) return;
+    var sidEl = document.getElementById("followSid");
+    if(sidEl) sidEl.textContent = "会话 " + session.id;
     followView.classList.add("open");
-    document.body.classList.add("lock");
+    document.body.style.overflow = "hidden";
     renderFollow();
-    var s = document.getElementById("followSid");
-    if(s) s.textContent = "会话 " + sidLabel();
   }
   function closeFollowView(){
     if(!followView) return;
     followView.classList.remove("open");
-    document.body.classList.remove("lock");
+    document.body.style.overflow = "";
   }
   function openFollow(){ goPage("#/follow"); }
   function closeFollow(){ goPage("#/"); }
