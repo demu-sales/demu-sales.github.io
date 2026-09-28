@@ -1008,6 +1008,11 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   .kb-hero-t{font-size:17px}
   .kb-sec{padding:13px 15px 6px}                                                     /* 手机端隐藏 Ctrl+V 提示（需压过 .match-actions .hint） */
   .future-grid{grid-template-columns:1fr !important}
+  /* 资质认证宽表在手机端必须能横向滑动：此前 .kb-cat 的 overflow:hidden 会把最右的
+     「操作」列直接裁掉，导致手机上下载 / 复制按钮完全够不到（真功能缺陷，已修） */
+  #certsBody .kb-cat{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+  #certsBody .kb-table{min-width:820px}
+  #certsBody .kb-cat-head{position:sticky;left:0}
   /* 顶栏收成单行：皮肤只留色点，品牌文本可截断，避免换行与遮挡 */
   .skin .label,.skin .chev{display:none}
   .skin-btn{padding:8px 10px}
