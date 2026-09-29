@@ -565,7 +565,50 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
   /* 打印时去掉“删除”按钮与其空列 */
   #docsView .doc-sheet th:last-child,#docsView .doc-sheet td:last-child{display:none !important}
   #docsView .doc-line,#docsView .doc-cell{-webkit-print-color-adjust:exact;print-color-adjust:exact;border-bottom-color:transparent !important}
+  #docsView .doc-sheet .noprint{display:none !important}
+  /* 专票合同：整份压到一页 A4 */
+  #docsView .doc-sheet.sp{padding:0 !important}
+  #docsView .doc-sheet.sp .sp-clauses p,#docsView .doc-sheet.sp .sp-sign{page-break-inside:avoid}
 }
+
+@page{size:A4}
+/* ---------- 销售文档 · 专票合同（供货合同 · 增值税专用发票） ---------- */
+.doc-stage .doc-sheet.sp{font-size:11px;line-height:1.5;padding:12mm 13mm}
+.doc-sheet.sp .doc-title{margin:11px 0 2px;font-size:19px;letter-spacing:5px}
+.doc-sheet.sp .doc-sub{margin-bottom:8px}
+.sp-fill{border:1px dashed #cfa9ab;border-radius:6px;padding:7px 9px;margin-bottom:9px;background:#fdf8f8}
+.sp-fill-h{font-size:10.5px;font-weight:800;color:#881C21;margin-bottom:5px;letter-spacing:.2px}
+.sp-fill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px 14px}
+.sp-f{display:flex;align-items:baseline;gap:5px;min-width:0}
+.sp-k{flex:0 0 auto;font-size:10px;font-weight:700;color:#555;white-space:nowrap;min-width:56px}
+.sp-u{flex:0 0 auto;font-size:10px;color:#777}
+.sp-f .doc-line{flex:1 1 auto;min-width:0}
+.sp-f.sp-wide{grid-column:1/-1;align-items:flex-start}
+.sp-ta{resize:none;line-height:1.45;padding:1px 0}
+.sp-sel{cursor:pointer}
+.sp-parties{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;font-size:11px;margin:6px 0}
+.sp-parties b{color:#555;font-weight:600}
+.sp-pre{margin:5px 0 6px;font-size:10.5px;color:#333;text-align:justify}
+.sp-h{font-size:11px;font-weight:800;color:#5c1417;margin:7px 0 3px}
+.sp-table th,.sp-table td{padding:3px 5px;font-size:10px}
+.sp-table .sp-name{font-weight:600}
+.sp-table .sp-empty{text-align:center;color:#999;padding:10px}
+.sp-unit{font-variant-numeric:tabular-nums}
+.sp-total{display:flex;justify-content:flex-end;align-items:baseline;gap:16px;margin-top:5px;text-align:right;font-size:12px}
+.sp-total b{font-size:14px;color:#881C21}
+.sp-total .cap{margin:0;font-size:10.5px;color:#555}
+.sp-tax{display:flex;flex-wrap:wrap;gap:4px 20px;margin-top:6px;padding:4px 9px;background:#faf6f6;border:1px solid #eadcdc;border-radius:5px;font-size:10.5px;color:#555}
+.sp-tax b{color:#881C21}
+.sp-param,.sp-conf{margin-top:5px;font-size:10.5px;color:#333;white-space:pre-wrap;text-align:justify}
+.sp-param b,.sp-conf b{color:#555;font-weight:600}
+.sp-blank{color:#aaa;letter-spacing:1px}
+.sp-clauses{margin:6px 0 0;font-size:10px;line-height:1.5;color:#333;text-align:justify}
+.sp-clauses p{margin:0 0 2px}
+.sp-clauses b{color:#5c1417;font-weight:700}
+.sp-sign{margin-top:10px}
+.sp-sign-t{width:100%;border-collapse:collapse;font-size:10.5px}
+.doc-sheet .sp-sign-t th{background:#f4ecec;border:1px solid #bbb;padding:3px 6px;font-size:10.5px;color:#5c1417;text-align:center}
+.sp-sign-t td{border:1px solid #bbb;padding:5px 6px;height:20px;vertical-align:middle}
 
 /* ---------- 产品知识 ---------- */
 .kb-panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow-sm)}
@@ -1418,6 +1461,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
         <div class="doc-tabs" id="docTabs">
           <button class="doc-tab on" data-doc="quote">报价单</button>
           <button class="doc-tab" data-doc="contract">合同</button>
+          <button class="doc-tab" data-doc="special">专票合同</button>
         </div>
         <div class="dp-actions">
           <button class="btn btn-ghost" id="btnDocPull">
@@ -1436,16 +1480,16 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
         </div>
       </div>
       <div class="dp-row">
-        <span class="dp-label">客户</span>
+        <span class="dp-label" id="docLblCustomer">客户</span>
         <input class="dp-in" id="docCustomer" placeholder="客户名称 / 需方（必填）">
-        <span class="dp-label">日期</span>
+        <span class="dp-label" id="docLblDate">日期</span>
         <input class="dp-in dp-date" id="docDate" type="date">
-        <span class="dp-label">有效期</span>
-        <input class="dp-in dp-num" id="docValid" placeholder="如 7 天">
+        <span class="dp-label" data-opt="valid">有效期</span>
+        <input class="dp-in dp-num" id="docValid" data-opt="valid" placeholder="如 7 天">
       </div>
       <div class="dp-row">
-        <span class="dp-label">备注</span>
-        <input class="dp-in dp-wide" id="docRemark" placeholder="交期、付款方式、含税/不含税、运费等（选填）">
+        <span class="dp-label" data-opt="remark">备注</span>
+        <input class="dp-in dp-wide" id="docRemark" data-opt="remark" placeholder="交期、付款方式、含税/不含税、运费等（选填）">
       </div>
       <div class="dp-row">
         <span class="dp-label">抬头</span>
@@ -4224,7 +4268,9 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
 
   /* ---------- 销售文档处理：合同 / 报价单 ---------- */
   var DOC_KEY = "demu_doc_v1";
-  var docState = { seriesId:"yingchun", docType:"quote", customer:"", company:"", date:"", valid:"7", remark:"", items:[] };
+  var docState = { seriesId:"yingchun", docType:"quote", customer:"", company:"", date:"", valid:"7", remark:"", items:[],
+                   cno:"", taxRate:"13", params:"", conf:"", shipMode:"物流配送", shipAddr:"",
+                   buyerRep:"", buyerTel:"", supRep:"李月", supTel:"17757049073" };
 
   // 八大系列 + 其他（其他固定排在最后）
   function docSeriesList(){
@@ -4245,16 +4291,24 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
           docState.valid    = (o.valid != null ? o.valid : "7");
           docState.remark   = o.remark   || "";
           docState.items    = (o.items && o.items.length) ? o.items : [];
+          ["cno","taxRate","params","conf","shipMode","shipAddr","buyerRep","buyerTel","supRep","supTel","docType"].forEach(function(k){
+            if(o[k] != null) docState[k] = o[k];
+          });
         }
       }
     }catch(e){}
     if(getSeries(docState.seriesId) === null) docState.seriesId = "yingchun";
+    if(docState.docType !== "contract" && docState.docType !== "special") docState.docType = "quote";
+    docSpDefaults();
   }
   function saveDocState(){
     try{
       localStorage.setItem(DOC_KEY, JSON.stringify({
         seriesId:docState.seriesId, customer:docState.customer, company:docState.company,
-        valid:docState.valid, remark:docState.remark, items:docState.items
+        valid:docState.valid, remark:docState.remark, items:docState.items,
+        docType:docState.docType, cno:docState.cno, taxRate:docState.taxRate, params:docState.params,
+        conf:docState.conf, shipMode:docState.shipMode, shipAddr:docState.shipAddr,
+        buyerRep:docState.buyerRep, buyerTel:docState.buyerTel, supRep:docState.supRep, supTel:docState.supTel
       }));
     }catch(e){}
   }
@@ -4336,7 +4390,17 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     var t = docTotal();
     var v = document.getElementById("docTotalVal"), c = document.getElementById("docTotalCap");
     if(v) v.textContent = "¥" + docFmt(t);
-    if(c) c.textContent = "大写：" + docCap(t);
+    if(c) c.textContent = (c.getAttribute("data-sp") ? "合计金额（大写）：" : "大写：") + docCap(t);
+    // 专票合同：↓ 单价、不含税总金额、增值税税额、价税合计
+    (docState.items || []).forEach(function(it, i){
+      var el = document.getElementById("spu" + i);
+      if(el){ var q = docNum(it.qty); el.textContent = docFmt(q > 0 ? (docNum(it.amt) / q) : docNum(it.amt)); }
+    });
+    var tx = docTaxSplit();
+    var n1 = document.getElementById("spNet"), n2 = document.getElementById("spTax"), n3 = document.getElementById("spGross");
+    if(n1) n1.textContent = "¥" + docFmt(tx.net);
+    if(n2) n2.textContent = "¥" + docFmt(tx.tax);
+    if(n3) n3.textContent = "¥" + docFmt(tx.gross);
     docUpdateHint();
   }
   function docSheetQuote(){
@@ -4384,12 +4448,198 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       +     '<div class="ln">代表签字：　　　　日期：</div></div>'
       + '</div>';
   }
+  /* ---------- 销售文档 · 专票合同（供货合同 · 增值税专用发票） ----------
+     来源：《迎春系列专票合同》模版 V1.5。
+     排版要点：需要填写的部分集中在最前端「填写区」，正文（甲乙方/明细/税务/参数/条款/签署）
+     全部由填写区与报价明细自动生成，整体压到一页 A4 内。 */
+  var SP_CONF_DEF = "1、外壳型材：铝合金型材；2、载体工艺：铜条点焊；3、插片工艺：磷青铜独立模块；";
+  // 填写区字段（顺序即排版顺序）；k 同时是 docState 的键
+  var SP_FIELD = [
+    { k:"cno",      l:"合同编号",     ph:"自动生成，可改" },
+    { k:"date",     l:"签署日期",     type:"date" },
+    { k:"customer", l:"乙方（需方）", ph:"客户公司全称" },
+    { k:"buyerRep", l:"乙方代表人",   ph:"姓名" },
+    { k:"buyerTel", l:"乙方电话",     ph:"手机 / 座机" },
+    { k:"supRep",   l:"甲方代表人",   ph:"李月" },
+    { k:"supTel",   l:"甲方电话",     ph:"17757049073" },
+    { k:"shipMode", l:"交货方式",     type:"select", opts:["物流配送","快递","自提"] },
+    { k:"shipAddr", l:"送达地址",     ph:"省市区 + 详细地址 + 收货人" },
+    { k:"taxRate",  l:"增值税税率",   ph:"13", unit:"%" }
+  ];
+  var SP_DEF = { supRep:"李月", supTel:"17757049073", taxRate:"13", shipMode:"物流配送" };
+  function docAutoCno(){ return "DM-" + docToday().replace(/-/g, "") + "-01"; }
+  // 载入/保存时补齐专票合同字段
+  function docSpDefaults(){
+    if(!docState.conf) docState.conf = SP_CONF_DEF;
+    Object.keys(SP_DEF).forEach(function(k){ if(!docState[k]) docState[k] = SP_DEF[k]; });
+    if(!docState.cno) docState.cno = docAutoCno();
+  }
+  // 明细补齐专票合同专用列（规格型号 / 备注，仅此模板使用，不影响报价单与合同）
+  function docSpEnsure(){
+    var changed = false;
+    (docState.items || []).forEach(function(it){
+      if(it.spec == null){ it.spec = [it.sbt, it.sf, it.inp].filter(function(x){ return !!x; }).join(" · "); changed = true; }
+      if(it.spnote == null){ it.spnote = "含税含运"; changed = true; }
+    });
+    return changed;
+  }
+  function docSpSupName(){
+    var c = String(docState.company || "").split(/[·|\n]/).map(function(x){ return x.trim(); }).filter(function(x){ return !!x; })[0];
+    return c || "宁波德木电器有限公司";
+  }
+  function docSpSeries(){ var n = docSeriesName(docState.seriesId); return n ? (n + "系列") : "—"; }
+  // 税务拆分：专票按含税价倒算（不含税 + 税额 = 价税合计 = 含税合计）
+  function docTaxSplit(){
+    var gross = docTotal();
+    var rate = docNum(docState.taxRate); if(!rate) rate = 13;
+    var net = gross / (1 + rate / 100);
+    return { gross:gross, net:net, tax:gross - net, rate:rate };
+  }
+  function docSpClauseList(){
+    var sup = docSpSupName(), mode = docState.shipMode || "物流配送";
+    var addr = docState.shipAddr || "＿＿＿＿＿＿＿＿＿＿";
+    return [
+      "二、交货方式：" + mode + "。",
+      "三、交货时间：甲方收到乙方签订回传的合同后 7 个工作日内发货，具体到货时间根据实际运输情况确定。",
+      "四、交货地点：（1）甲乙双方同意将本合同产品通过 " + mode + " 方式发送至 " + addr + "。货物在运输途中可能遭受的损毁、灭失的风险由甲乙双方及承运人协商处理。（2）更改前述交货地址及联系人的，乙方应在发货前与甲方进行书面确认。因更改地址产生的额外费用由乙方承担。甲方货交承运公司后，不再接受乙方任何更改需求，乙方应自行与承运人沟通协调，且由此导致的运输途中货物损毁、灭失的风险由乙方承担。（3）需方必须在交货地点提前完成卸货/提货相关准备工作并备齐手续文件，承运方配送货物至指定地点即视为甲方完成交货义务。",
+      "五、产品执行标准：按需方定制电源插孔。",
+      "六、包装标准、包装物的供应与回收：按照纸箱标准包装，包装物不回收。",
+      "七、验收及质量异议：乙方收悉产品后应立即进行验收，如果发现产品的品种、型号、规格、数量、质量不合规定，应在本合同产品到货后 三日 内书面提出（需方提出的书面异议中，应说明合同号、发货和到货日期；说明不符合规定的产品名称、型号、规格、批号、数量、包裝、检验方法等具体情况）。逾期未按约提出异议的，视为确认。产品如因使用、保管、保养不善等造成产品质量下降的，甲方不予负责。保修期内供方仅对产品因制造、加工等自身质量问题负责，产品质保三年。",
+      "八、退换货：定制产品除产品质量问题外不支持退换货。",
+      "九、付款方式：公司名称：" + sup + "；开户银行：中国银行慈溪观城支行；银行账号：396167778989；银行搜索行号：104332570719。",
+      "十、违约责任：按《民法典》相关条款执行。因本合同引发的任何争议提交供方所在地人民法院管辖。",
+      "十一、本合同自双方签字或盖章之日起生效，双方各持一份，具有同等法律效力。附件为本合同的组成部分，与本合同具有同等效力。本合同扫描件/电子章件亦为有效合同。"
+    ];
+  }
+  // 最前端「填写区」：集中所有需要填写的内容，改这里正文自动跟着变
+  function docSpFill(){
+    var h = '<section class="sp-fill"><div class="sp-fill-h">请先填写以下内容（正文自动生成）</div><div class="sp-fill-grid">';
+    SP_FIELD.forEach(function(f){
+      var v = (docState[f.k] == null ? "" : String(docState[f.k]));
+      var inp;
+      if(f.type === "select"){
+        inp = '<select class="doc-line sp-sel" data-sp="' + escAttr(f.k) + '">'
+            + (f.opts || []).map(function(o){ return '<option' + (o === v ? " selected" : "") + '>' + escHtml(o) + '</option>'; }).join("")
+            + '</select>';
+      } else if(f.type === "date"){
+        inp = '<input type="date" class="doc-line" data-sp="' + escAttr(f.k) + '" value="' + escAttr(v) + '">';
+      } else {
+        inp = '<input class="doc-line" data-sp="' + escAttr(f.k) + '" value="' + escAttr(v) + '" placeholder="' + escAttr(f.ph || "") + '">';
+      }
+      h += '<label class="sp-f"><span class="sp-k">' + escHtml(f.l) + '</span>' + inp
+        + (f.unit ? '<span class="sp-u">' + escHtml(f.unit) + '</span>' : '') + '</label>';
+    });
+    h += '</div>'
+      + '<label class="sp-f sp-wide"><span class="sp-k">参数</span><textarea class="doc-line sp-ta" data-sp="params" rows="2" placeholder="如：额定电压 250V；额定电流 16A；额定功率 4000W；外壳铝合金型材；插片磷青铜；铜条点焊">' + escHtml(docState.params || "") + '</textarea></label>'
+      + '<label class="sp-f sp-wide"><span class="sp-k">配置</span><textarea class="doc-line sp-ta" data-sp="conf" rows="2">' + escHtml(docState.conf || SP_CONF_DEF) + '</textarea></label>'
+      + '</section>';
+    return h;
+  }
+  function docSpTable(){
+    var rows = "", total = 0;
+    (docState.items || []).forEach(function(it, i){
+      var amt = docNum(it.amt); total += amt;
+      var q = docNum(it.qty);
+      var unit = q > 0 ? (amt / q) : amt;
+      rows += '<tr>'
+        + '<td class="sp-name">PDU机柜插座</td>'
+        + '<td><input class="doc-cell" data-i="' + i + '" data-f="spec" value="' + escAttr(it.spec || "") + '" placeholder="系列 / 型材 / 插孔 / 功能"></td>'
+        + '<td class="c">条</td>'
+        + '<td class="c"><input class="doc-cell c" data-i="' + i + '" data-f="qty" value="' + escAttr(it.qty || "") + '" placeholder="1"></td>'
+        + '<td class="r sp-unit" id="spu' + i + '">' + docFmt(unit) + '</td>'
+        + '<td class="r"><input class="doc-cell num" data-i="' + i + '" data-f="amt" value="' + escAttr(it.amt || "") + '" placeholder="0.00"></td>'
+        + '<td class="c"><input class="doc-cell c" data-i="' + i + '" data-f="spnote" value="' + escAttr(it.spnote || "") + '" placeholder="含税含运"></td>'
+        + '<td class="noprint"><button class="doc-del" data-del="' + i + '" title="删除此行">×</button></td>'
+        + '</tr>';
+    });
+    if(!rows) rows = '<tr><td colspan="8" class="sp-empty">暂无明细：点上方「从报价工作台带入」或「+ 新增明细行」</td></tr>';
+    return '<table class="sp-table"><thead><tr>'
+      + '<th style="width:14%">产品名称</th><th style="width:36%">规格型号</th><th style="width:6%">单位</th>'
+      + '<th style="width:8%">数量</th><th style="width:11%">单价(元)</th><th style="width:14%">金额含税(元)</th>'
+      + '<th style="width:11%">备注</th><th class="noprint"></th>'
+      + '</tr></thead><tbody>' + rows + '</tbody></table>'
+      + '<div class="sp-total">合计金额（小写）：<b id="docTotalVal">¥' + docFmt(total) + '</b>'
+      + '<span class="cap" id="docTotalCap" data-sp="1">合计金额（大写）：' + docCap(total) + '</span></div>';
+  }
+  function docSpTaxRow(){
+    var tx = docTaxSplit();
+    return '<div class="sp-tax">'
+      + '<span>增值税税率 <b>' + docFmt(tx.rate) + '%</b></span>'
+      + '<span>不含税总金额 <b id="spNet">¥' + docFmt(tx.net) + '</b></span>'
+      + '<span>增值税税额 <b id="spTax">¥' + docFmt(tx.tax) + '</b></span>'
+      + '<span>价税合计 <b id="spGross">¥' + docFmt(tx.gross) + '</b></span>'
+      + '</div>';
+  }
+  function docSpSign(){
+    var sup = docSpSupName(), d = docState.date || docToday();
+    return '<div class="sp-sign"><table class="sp-sign-t"><thead><tr>'
+      + '<th>甲方（供方）</th><th>乙方（需方）</th></tr></thead><tbody>'
+      + '<tr><td>供方：' + escHtml(sup) + '</td><td>需方：' + escHtml(docState.customer || "") + '</td></tr>'
+      + '<tr><td>委托代表人：' + escHtml(docState.supRep || "") + '</td><td>委托代表人：' + escHtml(docState.buyerRep || "") + '</td></tr>'
+      + '<tr><td>联系电话：' + escHtml(docState.supTel || "") + '</td><td>联系电话：' + escHtml(docState.buyerTel || "") + '</td></tr>'
+      + '<tr><td>公司（章）：</td><td>公司（章）：</td></tr>'
+      + '<tr><td>日期：' + escHtml(d) + '</td><td>日期：</td></tr>'
+      + '</tbody></table></div>';
+  }
+  function docSheetSpecial(){
+    var blanks = function(t){ return t ? escHtml(t) : '<span class="sp-blank">＿＿＿＿＿＿＿＿＿＿</span>'; };
+    return docHead()
+      + '<div class="doc-title">供 货 合 同</div>'
+      + '<div class="doc-sub">SALES CONTRACT · 增值税专用发票 · ' + escHtml(docSpSeries()) + '</div>'
+      + docSpFill()
+      + '<div class="sp-parties">'
+      +   '<div><b>甲方（供方）：</b>' + escHtml(docSpSupName()) + '</div>'
+      +   '<div><b>乙方（需方）：</b>' + blanks(docState.customer) + '</div>'
+      +   '<div><b>合同编号：</b>' + escHtml(docState.cno || docAutoCno()) + '</div>'
+      +   '<div><b>签署日期：</b>' + escHtml(docState.date || docToday()) + '</div>'
+      +   '<div><b>产品系列：</b>' + escHtml(docSpSeries()) + '</div>'
+      +   '<div><b>交货方式：</b>' + escHtml(docState.shipMode || SP_DEF.shipMode) + '</div>'
+      + '</div>'
+      + '<p class="sp-pre">根据《中华人民共和国民法典》及相关法律法规，基于诚实信用、互惠互利原则，甲乙双方就乙方向甲方订购产品事宜达成如下一致，特签订本合同，具体条款如下：</p>'
+      + '<h4 class="sp-h">一、产品名称、型号、单位、单价及金额。</h4>'
+      + docSpTable()
+      + docSpTaxRow()
+      + '<div class="sp-param"><b>参数：</b>' + blanks(docState.params) + '</div>'
+      + '<div class="sp-conf"><b>配置：</b>' + escHtml(docState.conf || SP_CONF_DEF) + '</div>'
+      + '<div class="sp-clauses">'
+      +   docSpClauseList().map(function(t){
+            return '<p>' + escHtml(t).replace(/^([一二三四五六七八九十]+、)/, "<b>$1</b>") + '</p>';
+          }).join("")
+      + '</div>'
+      + docSpSign();
+  }
+  function docSpPlain(){
+    var tx = docTaxSplit(), L = [];
+    L.push("【供货合同】（增值税专用发票）");
+    L.push("合同编号：" + (docState.cno || ""));
+    L.push("签署日期：" + (docState.date || docToday()) + "　产品系列：" + docSpSeries());
+    L.push("甲方（供方）：" + docSpSupName() + "　代表人：" + (docState.supRep || "") + "　电话：" + (docState.supTel || ""));
+    L.push("乙方（需方）：" + (docState.customer || "") + "　代表人：" + (docState.buyerRep || "") + "　电话：" + (docState.buyerTel || ""));
+    L.push("交货方式：" + (docState.shipMode || SP_DEF.shipMode) + "　送达地址：" + (docState.shipAddr || ""));
+    L.push("— 产品明细 —");
+    (docState.items || []).forEach(function(it, i){
+      var q = docNum(it.qty), amt = docNum(it.amt);
+      L.push((i + 1) + ". PDU机柜插座　规格型号：" + (it.spec || "") + "　单位：条　数量：" + (it.qty || "")
+        + "　单价：" + docFmt(q > 0 ? amt / q : amt) + "　金额含税：" + docFmt(amt) + "　备注：" + (it.spnote || "含税含运"));
+    });
+    L.push("合计金额（小写）：¥" + docFmt(tx.gross) + "　（大写：" + docCap(tx.gross) + "）");
+    L.push("增值税税率：" + docFmt(tx.rate) + "%　不含税总金额：¥" + docFmt(tx.net) + "　增值税税额：¥" + docFmt(tx.tax) + "　价税合计：¥" + docFmt(tx.gross));
+    L.push("参数：" + (docState.params || ""));
+    L.push("配置：" + (docState.conf || SP_CONF_DEF));
+    L.push("— 条款 —");
+    L.push(docSpClauseList().join("\n"));
+    return L.join("\n");
+  }
+
   function docUpdateHint(){
     var n = docState.items.length, t = docTotal();
     var el = document.getElementById("docHint");
     if(!el) return;
+    var sp = (docState.docType === "special");
     el.innerHTML = '当前共 <b>' + n + '</b> 条明细，合计 <b>¥' + docFmt(t) + '</b>；'
-      + '填写内容会自动保存在本设备。点「从报价工作台带入」可把已匹配好的配置带进来。';
+      + (sp
+          ? '专票合同：请在最前端「<b>填写区</b>」集中填写，正文（甲乙方 / 明细 / 税率拆分 / 参数 / 条款 / 签署）会自动生成，整份压在一页 A4 内。'
+          : '填写内容会自动保存在本设备。点「从报价工作台带入」可把已匹配好的配置带进来。');
   }
   function renderDocs(){
     var chips = document.getElementById("docSeries");
@@ -4407,8 +4657,23 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     document.getElementById("docRemark").value   = docState.remark   || "";
     if(!docState.date) docState.date = docToday();
     document.getElementById("docDate").value = docState.date;
-    document.getElementById("docSheet").innerHTML = (docState.docType === "contract") ? docSheetContract() : docSheetQuote();
+    var isSp = (docState.docType === "special");
+    if(isSp && docSpEnsure()) saveDocState();
+    var lblC = document.getElementById("docLblCustomer"), lblD = document.getElementById("docLblDate");
+    if(lblC) lblC.textContent = isSp ? "乙方" : "客户";
+    if(lblD) lblD.textContent = isSp ? "签署日期" : "日期";
+    var opts = document.querySelectorAll("#docPanel [data-opt]");
+    for(var q = 0; q < opts.length; q++) opts[q].style.display = isSp ? "none" : "";
+    var sheetEl = document.getElementById("docSheet");
+    sheetEl.className = "doc-sheet" + (isSp ? " sp" : "");
+    sheetEl.innerHTML = docSheetHTML();
     docUpdateHint();
+  }
+  // 按当前文档类型取渲染函数（三模板统一入口，避免多处漏改）
+  function docSheetHTML(){
+    if(docState.docType === "special") return docSheetSpecial();
+    if(docState.docType === "contract") return docSheetContract();
+    return docSheetQuote();
   }
   function openDocsView(){
     document.getElementById("docsSid").textContent = "会话 " + session.id;
@@ -4507,6 +4772,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     if(sheet) sheet.scrollIntoView({behavior:"smooth", block:"center"});
   }
   function docPlainText(){
+    if(docState.docType === "special") return docSpPlain();
     var type = docState.docType === "contract" ? "产品采购合同" : "产品报价单";
     var total = docTotal();
     var L = [];
@@ -4575,7 +4841,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       docState[key] = el.value;
       saveDocState();
       var sheet = document.getElementById("docSheet");
-      if(sheet) sheet.innerHTML = (docState.docType === "contract") ? docSheetContract() : docSheetQuote();
+      if(sheet) sheet.innerHTML = docSheetHTML();
       docUpdateHint();
     });
   });
@@ -4587,7 +4853,17 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     if(isNaN(i) || !f || !docState.items[i]) return;
     docState.items[i][f] = t.value;
     saveDocState();
-    if(f === "amt") docRefreshTotals(); else docUpdateHint();
+    if(f === "amt" || f === "qty") docRefreshTotals(); else docUpdateHint();
+  });
+  // 专票合同·最前端填写区：失焦/选择即写回状态并重绘正文（甲乙方、编号、参数、配置、交货方式等）
+  document.getElementById("docSheet").addEventListener("change", function(e){
+    var t = e.target;
+    if(!t || !t.getAttribute) return;
+    var k = t.getAttribute("data-sp");
+    if(!k) return;
+    docState[k] = t.value;
+    saveDocState();
+    renderDocs();
   });
   // 删除明细行
   document.getElementById("docSheet").addEventListener("click", function(e){
