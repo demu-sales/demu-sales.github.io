@@ -4445,6 +4445,12 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     function p(n){ return (n < 10 ? "0" : "") + n; }
     return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate());
   }
+  // 单价 = 金额 ÷ 数量（以「分」为单位整数运算，避免 99.05/10=9.905 被浮点截成 9.90）
+  function unitPriceOf(amt, qty){
+    var a = Math.round((Number(amt) || 0) * 100);
+    var q = Math.floor(Number(qty) || 0);
+    return q > 0 ? (Math.round(a / q) / 100) : (a / 100);
+  }
   function docNum(v){ var n = parseFloat(String(v == null ? "" : v).replace(/[^\d.\-]/g, "")); return isNaN(n) ? 0 : n; }
   function docFmt(n){ return (Math.round(n * 100) / 100).toFixed(2); }
   // 人民币大写
@@ -4522,7 +4528,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     // 专票合同：↓ 单价、不含税总金额、增值税税额、价税合计
     (docState.items || []).forEach(function(it, i){
       var el = document.getElementById("spu" + i);
-      if(el){ var q = docNum(it.qty); el.textContent = docFmt(q > 0 ? (docNum(it.amt) / q) : docNum(it.amt)); }
+      if(el){ el.textContent = docFmt(unitPriceOf(it.amt, it.qty)); }
     });
     var tx = docTaxSplit();
     var n1 = document.getElementById("spNet"), n2 = document.getElementById("spTax"), n3 = document.getElementById("spGross");
@@ -4674,7 +4680,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
         + '<td><div class="doc-cell sp-txt" contenteditable="true" data-i="' + i + '" data-f="spec">' + escHtml(it.spec || "") + '</div></td>'
         + '<td class="c">条</td>'
         + '<td class="c"><input class="doc-cell c" data-i="' + i + '" data-f="qty" value="' + escAttr(it.qty || "") + '" placeholder="1"></td>'
-        + '<td class="r sp-unit" id="spu' + i + '">' + docFmt(unit) + '</td>'
+        + '<td class="r sp-unit" id="spu' + i + '">' + docFmt(unitPriceOf(amt, q)) + '</td>'
         + '<td class="r"><input class="doc-cell num" data-i="' + i + '" data-f="amt" value="' + escAttr(it.amt || "") + '" placeholder="0.00"></td>'
         + '<td class="c"><input class="doc-cell c" data-i="' + i + '" data-f="spnote" value="' + escAttr(it.spnote || "") + '" placeholder="含税含运"></td>'
         + '<td class="noprint"><button class="doc-del" data-del="' + i + '" title="删除此行">×</button></td>'
@@ -4748,7 +4754,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     (docState.items || []).forEach(function(it, i){
       var q = docNum(it.qty), amt = docNum(it.amt);
       L.push((i + 1) + ". PDU机柜插座　规格型号：" + (it.spec || "") + "　单位：条　数量：" + (it.qty || "")
-        + "　单价：" + docFmt(q > 0 ? amt / q : amt) + "　金额含税：" + docFmt(amt) + "　备注：" + (it.spnote || "含税含运"));
+        + "　单价：" + docFmt(unitPriceOf(amt, q)) + "　金额含税：" + docFmt(amt) + "　备注：" + (it.spnote || "含税含运"));
     });
     L.push("合计金额（小写）：¥" + docFmt(tx.gross) + "　（大写：" + docCap(tx.gross) + "）");
     L.push("增值税税率：" + tx.rate + "%　不含税总金额：¥" + docFmt(tx.net) + "　增值税税额：¥" + docFmt(tx.tax) + "　价税合计：¥" + docFmt(tx.gross));
@@ -5899,14 +5905,14 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   function followDocSnap(){
     var items = docState.items || [];
     if(!items.length) return null;
-    var total = 0;
-    items.forEach(function(it){ total += docNum(it.amt); });
+    var total = 0, qtySum = 0;
+    items.forEach(function(it){ total += docNum(it.amt); qtySum += qtyParse(it.qty); });
     var one = items[0] || {};
     var head = [one.sbt, one.sf, one.inp].filter(function(x){ return !!x; }).join(" · ");
     return {
       seriesId: docState.seriesId, seriesName: followSeriesName(docState.seriesId),
       profile: "", amount: total, dtype: (docState.docType || "quote"),
-      summary: "共 " + items.length + " 行明细" + (head ? "：" + head : ""),
+      summary: "共 " + items.length + " 行明细" + (qtySum > 0 ? "（" + qtySum + " 条）" : "") + (head ? "：" + head : ""),
       sig: normWord("doc|" + docState.seriesId + "|" + items.length + "|" + total.toFixed(2)),
       customer: docState.customer || ""
     };
