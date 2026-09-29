@@ -3605,7 +3605,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       if(!m) return;
       var w = m[0];
       if(w.indexOf("不含税") === 0) taxNote = "不含税";
-      else if(w.indexOf("含运") > -1 || w.indexOf("包运") > -1) taxNote = "含税含运";
+      else if(w.indexOf("含运") > -1 || w.indexOf("含韵") > -1 || w.indexOf("包运") > -1) taxNote = "含税含运";
       else taxNote = "含税";
       text = raw.replace(w, " ");
     })();
@@ -4957,11 +4957,11 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     // 数量变化 → 用「基础价 × 阶梯倍率」自动重算金额（金额被手工改过就不再自动覆盖）
     if(f === "qty"){
       if(it.base != null && it.base !== ""){
-        var tier = qtyTier(docNum(it.value));
+        var tier = qtyTier(docNum(it.qty));
         it.amt = tier ? docFmt(applyQtyTier(docNum(it.base), tier)) : "";
         var ai = document.querySelector('#docSheet .doc-cell[data-i="' + i + '"][data-f="amt"]');
         if(ai) ai.value = it.amt;
-        if(tier) toast("已按 " + Math.floor(docNum(it.value)) + " 条 " + qtyRateText(tier) + " 重算金额 ¥" + it.amt);
+        if(tier) toast("已按 " + Math.floor(docNum(it.qty)) + " 条 " + qtyRateText(tier) + " 重算金额 ¥" + it.amt);
       }
     }
     if(f === "amt") it.base = null;   // 手工改过金额 → 不再由数量自动覆盖
