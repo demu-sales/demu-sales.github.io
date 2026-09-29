@@ -4878,7 +4878,8 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
           : "；未填数量 → 金额留空，在明细里填数量会自动按阶梯倍率计算"));
   }
   // 智能助手直接写入文档明细（无需再点“从报价工作台带入”）
-  function docPushFromAgent(sid, af, amount, profName){
+  function docPushFromAgent(sid, af, amount, profName, opt){
+    opt = opt || {};
     var s = getSeries(sid);
     var brand = af.brand || (getBrandOptions()[0] || "");
     var prof = af.profile || profName || "";
@@ -4892,11 +4893,19 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
                  .concat((af.cables||[]).map(function(x){ return (x.qty||1) + "米" + x.name; }))
                  .concat((af.plugs||[]).map(function(x){ return (x.qty||1) + "个" + x.name; })).join("、");
     var noteTxt = (af.specials||[]).map(function(x){ return (x.qty||1) + "个" + x.name; }).join("、");
+    if(opt.taxNote) noteTxt = noteTxt ? (noteTxt + "；" + opt.taxNote) : opt.taxNote;
+    // 数量 → 阶梯倍率 → 最终金额（未给数量则金额留空，进文档填数量会自动算）
+    var qtyN = qtyParse(opt.qty);
+    var tier = qtyTier(qtyN);
+    var baseAmt = (opt.base != null ? opt.base : (amount || 0));
     var item = {
       sbt: [s ? s.name : sid, brand, prof].filter(function(x){ return x; }).join(" / "),
-      sf: sfTxt, inp: inTxt, note: noteTxt, qty: "",
-      base: amount || 0, amt: docFmt(amount || 0)
+      sf: sfTxt, inp: inTxt, note: noteTxt,
+      qty: qtyN > 0 ? String(qtyN) : "",
+      base: baseAmt,
+      amt: tier ? docFmt(applyQtyTier(baseAmt, tier)) : ""
     };
+    if(opt.docType === "special" || opt.docType === "contract" || opt.docType === "quote") docState.docType = opt.docType;
     var replaced = false;
     for(var j=0;j<docState.items.length;j++){
       var head = String(docState.items[j].sbt || "").split(" / ")[0];
@@ -5093,7 +5102,8 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   function agFmtItems(arr, unitFn){
     return (arr||[]).map(function(it){ return (it.qty||1) + unitFn(it) + escHtml(it.name); }).join("、");
   }
-  function agConfigText(af, sid){
+  function agConfigText(af, sid, opt){
+    opt = opt || {};
     var L = [];
     L.push("【系列商标型材】: " + [getSeries(sid).name, af.brand||"", af.profile||""].filter(function(x){ return x; }).join(" / "));
     L.push("【插孔功能】: " + [(af.sockets||[]).map(function(i){ return (i.qty||1)+"位"+i.name; }).join("、"),
@@ -5103,8 +5113,10 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
         + (af.cables||[]).map(function(i){ return (i.qty||1)+"米"+i.name; }).join("、")
         + (((af.cables||[]).length && (af.plugs||[]).length) ? "、" : "")
         + (af.plugs||[]).map(function(i){ return (i.qty||1)+"个"+i.name; }).join("、"));
-    L.push("【其他备注】: " + (af.specials||[]).map(function(i){ return (i.qty||1)+"个"+i.name; }).join("、"));
-    L.push("【数量】: ");
+    var extras = (af.specials||[]).map(function(i){ return (i.qty||1)+"个"+i.name; }).filter(function(x){ return !!x; });
+    if(opt.taxNote) extras.push(opt.taxNote);
+    L.push("【其他备注】: " + extras.join("、"));
+    L.push("【数量】: " + (opt.qty ? opt.qty : ""));
     return L.join("\n");
   }
   function agMoney(n){ return "¥" + (Math.round((n||0) * 100) / 100).toFixed(2); }
@@ -5134,11 +5146,14 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   }
   function agCapabilities(){
     return '<div class="ag-h">我能做这几件事</div>'
-      + '1. <b>自动报价</b>：把客户需求粘进来（如「迎春 6位10A新国标孔 双断开关 1.5平方3米线16A欧标插头」），我按平台规则算出模组费、型材费、短件附加费与合计\n'
-      + '2. <b>自动做表格</b>：说「生成报价单」或「做合同」，我把配置填进销售文档并可直接打印 / 另存 PDF\n'
-      + '3. <b>产品知识问答</b>：直接问产品问题，我从「产品知识」里给出原文答案（如「迎春的插孔是什么材质」「春光系列有哪些卖点」「连城的防雷参数」）\n'
-      + '4. <b>价格与规则</b>：问价格（「10A新国标扁五孔多少钱」）、问系列可选项（「迎春系列有哪些型材」）、问规则（「计价规则是什么」）\n'
-      + '5. <b>可教我新东西</b>：输入「记住 关键词：答案」，以后问到该关键词我就按你教的内容回答；输入「忘记 关键词」可删除\n'
+      + '1. <b>自动报价</b>：把客户需求粘进来（如「迎春 6位10A新国标孔 双断开关 1.5平方3米线16A欧标插头」），我按平台规则算模组费、型材费、短件附加费与合计；<b>写上数量</b>（如「… 100条」）我就按数量阶梯倍率给最终价\n'
+      + '2. <b>生成三种文档</b>：说「生成报价单」/「做合同」/「生成专票合同」，我把配置与金额填进销售文档并切到对应模板，可直接打印 / 另存 PDF\n'
+      + '3. <b>产品知识问答</b>：问产品问题给原文答案（「迎春的插孔是什么材质」「春光系列有哪些卖点」「连城的防雷参数」）\n'
+      + '4. <b>查资质认证</b>：问「迎春有哪些证书」「青韵的试验报告」「有哪些 3C 证书」，我按系列/类别列出并可直接下载\n'
+      + '5. <b>查客户跟进</b>：问「最近有哪些跟进」「已成交多少」「迎春的报价记录」，我给统计与最近明细；也能说「把最近这条标记为已成交」\n'
+      + '6. <b>价格与规则</b>：问价格（「10A新国标扁五孔多少钱」）、系列可选项（「迎春系列有哪些型材」）、规则（「计价规则是什么」）\n'
+      + '7. <b>可教我新东西</b>：「记住 关键词：答案」；「忘记 关键词」删除\n'
+      + '8. <b>直达页面</b>：说「打开资质认证 / 客户跟进明细 / 产品知识 / 报价平台」\n'
       + '<div class="ag-note">我完全在本机按规则运行：不联网、无调用费用，答案与平台配置实时一致。</div>';
   }
   function agRulesText(){
@@ -5206,6 +5221,12 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     if(auto.profile) summary.push("型材 " + auto.profile);
     if(auto.brand) summary.push("商标 " + auto.brand);
     if(res.lenSpecMm > 0) summary.push("客户指定总长 " + res.lenSpecMm + "mm");
+    // 数量 → 阶梯倍率；含税含运等识别结果
+    var qty = qtyParse(res.qtySpec);
+    var tier = qtyTier(qty);
+    if(qty > 0) summary.push("数量 " + qty + " 条" + (tier ? "（" + tier.label + " " + qtyRateText(tier) + "）" : ""));
+    if(res.taxNote) summary.push("其他备注 " + res.taxNote);
+    rows.forEach(function(r){ r.qty = qty; r.tier = tier; r.final = tier ? applyQtyTier(r.total, tier) : null; });
 
     var html = '<div class="ag-h">已按需求识别</div>' + (summary.length ? summary.join("；") : "（未识别到具体配置）");
     if(!rows.length){
@@ -5215,15 +5236,22 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       agSay(html);
       return;
     }
-    html += '<table><thead><tr><th>系列</th><th>型材（默认）</th><th>模组</th><th>型材</th><th>短件费</th><th>合计</th></tr></thead><tbody>';
+    html += '<table><thead><tr><th>系列</th><th>型材（默认）</th><th>模组</th><th>型材</th><th>短件费</th>'
+         + '<th>基础合计</th>' + (tier ? '<th>最终价</th>' : '') + '</tr></thead><tbody>';
     rows.forEach(function(r){
       html += '<tr><td>' + escHtml(r.series) + (r.dropped > 0 ? ' <span style="color:#b23">*</span>' : '') + '</td>'
            + '<td>' + escHtml(r.prof || "未选") + '</td>'
            + '<td class="r">' + agMoney(r.mods) + '</td><td class="r">' + agMoney(r.profileSum) + '</td>'
            + '<td class="r">' + (r.shortFee ? agMoney(r.shortFee) : "—") + '</td>'
-           + '<td class="r"><b>' + agMoney(r.total) + '</b></td></tr>';
+           + '<td class="r">' + agMoney(r.total) + '</td>'
+           + (tier ? '<td class="r"><b>' + agMoney(r.final) + '</b></td>' : '')
+           + '</tr>';
     });
     html += '</tbody></table>';
+    html += tier
+      ? '<div class="ag-note">最终价 = 基础合计 × <b>' + qtyRateText(tier) + '</b>（' + tier.label + '，' + qty + ' 条）。</div>'
+      : '<div class="ag-note">告诉我数量（如「<b>100条</b>」），我按阶梯倍率给你<b>最终价</b>；未给数量只报基础合计。<br>'
+        + '阶梯：1–20 条 ×1.55 ｜ 21–50 条 ×1.45 ｜ 51–99 条 ×1.35 ｜ 100–199 条 ×1.25 ｜ 200–300 条 ×1.15 ｜ 301–500 条 ×1.10 ｜ 501 条以上 ×1.05</div>';
     if(partial.length) html += '<div class="ag-note"><span style="color:#b23">*</span> 带 * 的系列有配置项不适配、已排除在金额之外（' + escHtml(partial.join("、")) + '），请到报价工作台手动补选。</div>';
     var first = rows[0];
     html += '<div class="ag-note">计价明细：长度 ' + first.lenMm + 'mm'
@@ -5240,10 +5268,12 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     }
     var direct = docSeriesList().filter(function(s){ return s.type !== "custom"; });
     if(direct.length) html += '<div class="ag-note">按型号报价、不参与自动算价：' + escHtml(direct.map(function(s){ return s.name; }).join("、")) + '</div>';
-    agLast = { rows:rows, auto:auto };
+    agLast = { rows:rows, auto:auto, qty:qty, taxNote:(res.taxNote || "") };
     var acts = ['<button class="ag-act" data-ag="copy">复制配置</button>',
                 '<button class="ag-act" data-ag="quote" data-sid="' + first.sid + '">填入报价工作台</button>',
-                '<button class="ag-act" data-ag="doc" data-sid="' + first.sid + '">生成报价单</button>'];
+                '<button class="ag-act" data-ag="doc" data-dt="quote" data-sid="' + first.sid + '">生成报价单</button>',
+                '<button class="ag-act" data-ag="doc" data-dt="contract" data-sid="' + first.sid + '">生成合同</button>',
+                '<button class="ag-act" data-ag="doc" data-dt="special" data-sid="' + first.sid + '">生成专票合同</button>'];
     agSay(html, acts);
   }
   /* ---------- 销售助理 · 产品知识问答（检索「产品知识」模块的数据） ---------- */
@@ -5384,6 +5414,141 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     return { html: h, acts: acts };
   }
 
+  /* ---------- 智能助手 · 全模块接入 ----------
+     让助手能直接「生成」（报价单/合同/专票合同）与「查询」（产品知识/资质认证/客户跟进），
+     并支持数量阶梯倍率、含税含运识别；查询类结果都带一个直达按钮。 */
+  var AG_STATUS = { draft:"草稿", sent:"已发出", won:"已成交", lost:"已流失" };
+
+  // 资质认证：按系列/类别筛选后作答（列表异步加载，首次会自动拉取 certs.json）
+  function agCertReply(raw, n){
+    var openBtn = '<button class="ag-act" data-ag="certs">打开资质认证</button>';
+    loadCerts(function(){
+      if(certFail || !certList.length){
+        agSay('<div class="ag-h">资质认证</div>暂时读不到证书列表（certs/certs.json）。可以直接进资质认证页查看与下载。', [openBtn]);
+        return;
+      }
+      var named = agSeriesMentioned(raw).map(function(s){ return String(s.name).replace(/系列$/, ""); });
+      var cats = CERT_CATS.filter(function(c){ return n.indexOf(normWord(c)) > -1; });
+      // 「报告」这类口语 → 归到试验报告
+      if(/试验报告|检测报告|测试报告/.test(n) && cats.indexOf("试验报告") < 0) cats.push("试验报告");
+      var list = certList.filter(function(it){
+        if(cats.length && cats.indexOf(it.cat) < 0) return false;
+        if(named.length){
+          var arr = it.series || [], hit = false;
+          for(var i=0;i<named.length;i++){
+            if(arr.indexOf(named[i]) > -1 || String(it.name || "").indexOf(named[i]) > -1){ hit = true; break; }
+          }
+          if(!hit) return false;
+        }
+        return true;
+      });
+      // 分类统计（整库）
+      var byCat = {};
+      certList.forEach(function(it){ var c = it.cat || "未分类"; byCat[c] = (byCat[c] || 0) + 1; });
+      var catLine = Object.keys(byCat).sort().map(function(c){ return escHtml(c) + " " + byCat[c] + " 份"; }).join(" · ");
+      var title = (named.length ? escHtml(named.join("、")) : "") + (cats.length ? escHtml(cats.join("、")) : "");
+      var html = '<div class="ag-h">资质认证' + (title ? '：' + title : "") + '</div>'
+        + '库中共 <b>' + certList.length + '</b> 份：' + catLine + '<br>';
+      if(!list.length){
+        html += '<div class="ag-note">没有匹配的证书。可以换个系列或类别，也可以进页面自己筛。</div>';
+        agSay(html, [openBtn]);
+        return;
+      }
+      var show = list.slice(0, 10);
+      html += '匹配 <b>' + list.length + '</b> 份' + (list.length > show.length ? '（下面列前 10 份）' : '') + '：';
+      html += '<table><thead><tr><th>类别</th><th>名称</th><th>系列</th></tr></thead><tbody>';
+      show.forEach(function(it){
+        html += '<tr><td>' + escHtml(it.cat || "") + '</td><td>' + escHtml(it.name || it.file) + '</td>'
+             +  '<td>' + escHtml((it.series || []).join("、")) + '</td></tr>';
+      });
+      html += '</tbody></table>';
+      var acts = [openBtn];
+      show.slice(0, 3).forEach(function(it){
+        acts.push('<button class="ag-act" data-ag="certdl" data-file="' + escAttr(it.file) + '">下载 ' + escHtml(String(it.name || it.file).slice(0, 14)) + '…</button>');
+      });
+      agSay(html, acts);
+    });
+  }
+
+  // 客户跟进明细：统计 + 最近记录（可按系列筛）
+  function agFollowReply(raw, n){
+    var openBtn = '<button class="ag-act" data-ag="follow">打开客户跟进明细</button>';
+    if(!followItems.length){
+      agSay('<div class="ag-h">客户跟进明细</div>还没有记录。去「报价平台」匹配一次报价就会自动留痕（记草稿），点「复制配置」或出合同/报价单后自动升级为「已发出」。', [openBtn]);
+      return;
+    }
+    var named = agSeriesMentioned(raw).map(function(s){ return String(s.name).replace(/系列$/, ""); });
+    var all = followItems;
+    var list = named.length
+      ? all.filter(function(it){ return named.some(function(nm){ return String(it.seriesName || "").indexOf(nm) > -1; }); })
+      : all;
+    function cnt(st){ var c = 0; all.forEach(function(x){ if(x.st === st) c++; }); return c; }
+    var sumQ = 0, sumW = 0;
+    all.forEach(function(x){
+      if(x.st === "sent" || x.st === "won") sumQ += (x.amount || 0);
+      if(x.st === "won") sumW += (x.amount || 0);
+    });
+    var html = '<div class="ag-h">客户跟进明细' + (named.length ? '：' + escHtml(named.join("、")) : "") + '</div>'
+      + '共 <b>' + all.length + '</b> 条：草稿 <b>' + cnt("draft") + '</b> · 已发出 <b>' + cnt("sent") + '</b> · 已成交 <b>' + cnt("won")
+      + '</b> · 已流失 <b>' + cnt("lost") + '</b><br>'
+      + '已报价金额 <b>' + agMoney(sumQ) + '</b>' + (sumW > 0 ? '　已成交金额 <b>' + agMoney(sumW) + '</b>' : '')
+      + '（不含税/含运请以单据为准）';
+    if(!list.length){
+      html += '<div class="ag-note">没有「' + escHtml(named.join("、")) + '」的跟进记录。</div>';
+      agSay(html, [openBtn]);
+      return;
+    }
+    var show = list.slice(0, 8);
+    html += '<table><thead><tr><th>状态</th><th>客户</th><th>系列</th><th>配置</th><th>金额</th></tr></thead><tbody>';
+    show.forEach(function(it){
+      html += '<tr><td>' + escHtml(AG_STATUS[it.st] || "") + '</td>'
+           +  '<td>' + escHtml(it.customer || "—") + '</td>'
+           +  '<td>' + escHtml(it.seriesName || "") + '</td>'
+           +  '<td>' + escHtml(String(it.summary || "").slice(0, 26)) + '</td>'
+           +  '<td class="r">' + agMoney(it.amount) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    if(list.length > show.length) html += '<div class="ag-note">还有 ' + (list.length - show.length) + ' 条，进页面看全部（可筛选、导出 CSV）。</div>';
+    html += '<div class="ag-note">可以直接说「把最近这条标记为已成交 / 已发出 / 已流失」，我就帮你改状态。</div>';
+    agSay(html, [openBtn]);
+  }
+
+  // 改跟进状态：「标记为已成交」等（可按系列指定目标）
+  function agFollowMark(raw, stKey){
+    if(!followItems.length){ agSay('还没有跟进记录，先去「报价平台」匹配一次报价。', ['<button class="ag-act" data-ag="follow">打开客户跟进明细</button>']); return; }
+    var named = agSeriesMentioned(raw);
+    var target = null;
+    if(named.length){
+      for(var i=0;i<followItems.length;i++){
+        var nm = String(followItems[i].seriesName || "");
+        for(var k=0;k<named.length;k++){
+          if(nm.indexOf(String(named[k].name).replace(/系列$/, "")) > -1){ target = followItems[i]; break; }
+        }
+        if(target) break;
+      }
+    }
+    if(!target) target = followItems[0];
+    target.st = stKey;
+    if((stKey === "sent" || stKey === "won") && !target.at) target.at = Date.now();
+    followSave();
+    agSay('<div class="ag-h">已更新跟进状态</div>'
+      + '把 <b>' + escHtml(target.customer || "未填客户") + '</b> 的「' + escHtml(target.seriesName || "") + '」（' + agMoney(target.amount) + '）标记为 <b>'
+      + escHtml(AG_STATUS[stKey]) + '</b>。',
+      ['<button class="ag-act" data-ag="follow">打开客户跟进明细</button>']);
+  }
+
+  // 「打开 xx」直达
+  function agNavReply(raw){
+    var t = normWord(raw);
+    if(!/^(打开|进入|去|看看|查看)/.test((raw || "").trim())) return false;
+    if(/资质|认证|证书/.test(t)){ closeAgentView(); goPage("#/certs"); return true; }
+    if(/跟进|客户明细|客户记录/.test(t)){ closeAgentView(); goPage("#/follow"); return true; }
+    if(/知识|资料|手册/.test(t)){ closeAgentView(); goPage("#/kb"); return true; }
+    if(/文档|合同|报价单/.test(t)){ closeAgentView(); goPage("#/docs"); return true; }
+    if(/报价|算价|工作台/.test(t)){ closeAgentView(); goPage("#/quote"); return true; }
+    return false;
+  }
+
   function agHandle(text){
     var raw = ("" + text).trim();
     if(!raw) return;
@@ -5418,21 +5583,35 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     if(/你能做什么|会什么|帮助|怎么用|使用说明|功能列表/.test(n)){ agSay(agCapabilities()); return; }
     // 3) 计价规则
     if(/计价规则|怎么算|怎么计算|价格规则|核算规则|短件|预留|2ut/.test(n) && !/多少钱|报价/.test(n)){ agSay(agRulesText()); return; }
-    // 4) 表格 / 文档
-    if(/报价单|合同|做表格|生成表格|出文档|文档/.test(n) && !/多少钱/.test(n)){
+    // 4) 表格 / 文档（报价单 / 合同 / 专票合同）
+    if(/报价单|合同|做表格|生成表格|出文档|文档|专票/.test(n) && !/多少钱/.test(n)){
+      var wantType = /专票/.test(n) ? "special" : (/合同/.test(n) ? "contract" : "quote");
+      var typeName = wantType === "special" ? "专票合同" : (wantType === "contract" ? "产品采购合同" : "产品报价单");
       var sid4 = (agLast && agLast.rows[0]) ? agLast.rows[0].sid : docState.seriesId;
-      var filled = false;
+      var qty4 = (agLast && agLast.qty) ? agLast.qty : 0;
+      var tax4 = (agLast && agLast.taxNote) ? agLast.taxNote : "";
+      var tier4 = qtyTier(qty4);
+      var filled = false, final4 = 0;
       if(agLast && agLast.rows.length){
         var row0 = agLast.rows[0];
         agApplyToQuote(row0.sid, row0.af);
-        filled = docPushFromAgent(row0.sid, row0.af, row0.total, row0.prof);
+        final4 = tier4 ? applyQtyTier(row0.total, tier4) : 0;
+        filled = docPushFromAgent(row0.sid, row0.af, row0.total, row0.prof,
+          { qty:qty4, base:row0.total, taxNote:tax4, docType:wantType });
+      } else {
+        docState.docType = wantType; saveDocState();
       }
-      agSay('<div class="ag-h">生成表格</div>'
-        + (filled
-            ? '已把「<b>' + escHtml(docSeriesName(sid4)) + '</b>」的配置与金额直接写入销售文档草稿（合计 ' + agMoney(agLast.rows[0].total) + '）。'
-            : '已准备好文档草稿（系列：<b>' + escHtml(docSeriesName(sid4)) + '</b>），进去后可点「从报价工作台带入」补充明细。')
-        + '<div class="ag-note">点下面按钮进入销售文档，可直接编辑、打印或另存 PDF。</div>',
-        ['<button class="ag-act" data-ag="doc" data-sid="' + sid4 + '">打开报价单 / 合同</button>']);
+      var msg = '<div class="ag-h">生成' + escHtml(typeName) + '</div>';
+      if(filled){
+        msg += '已把「<b>' + escHtml(docSeriesName(sid4)) + '</b>」的配置写入销售文档，模板已切到「<b>' + escHtml(typeName) + '</b>」。';
+        msg += tier4
+          ? '<br>数量 <b>' + qty4 + ' 条</b>，金额按阶梯 <b>' + qtyRateText(tier4) + '</b> 计为 <b>' + agMoney(final4) + '</b>。'
+          : '<br>未给数量 → <b>金额留空</b>，进文档填数量后会自动按阶梯倍率算（也可直接在需求里写「100条」）。';
+      } else {
+        msg += '已把文档模板切到「<b>' + escHtml(typeName) + '</b>」（系列：<b>' + escHtml(docSeriesName(sid4)) + '</b>）。<br>先把客户需求粘给我报个价，我就能连金额一起填进去。';
+      }
+      msg += '<div class="ag-note">点下面按钮进入销售文档，可直接编辑、打印或另存 PDF。</div>';
+      agSay(msg, ['<button class="ag-act" data-ag="doc" data-dt="' + wantType + '" data-sid="' + sid4 + '">打开' + escHtml(typeName) + '</button>']);
       return;
     }
     // 5) 本地记忆命中：先找完全相等，再取"最长"关键词
@@ -5445,6 +5624,20 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       if(n.indexOf(mk) > -1 && mk.length > memLen){ memHit = agMem.kb[i]; memLen = mk.length; }  // 否则取最长
     }
     if(memHit){ agSay(escHtml(memHit.v)); return; }
+    // 5.5) 内置查询（记忆之后、其它内置分支之前）：直达页面 / 跟进状态 / 资质认证 / 客户跟进
+    //      （放在记忆命中之后：用户教过的关键词优先，不被内置分支抢走）
+    // 5.6) 直达页面：「打开资质认证 / 客户跟进明细 / 报价平台」等
+    if(agNavReply(raw)) return;
+    // 5.7) 跟进状态修改（必须放在"查询"之前：「标记为已成交」里含「成交」）
+    if(/标记|设为|改成|状态改/.test(n)){
+      var stKey = /已成交|成交/.test(n) ? "won" : /已流失|流失/.test(n) ? "lost"
+                : /已发出|发出/.test(n) ? "sent" : /草稿/.test(n) ? "draft" : "";
+      if(stKey && /跟进|这条|最近|客户|记录/.test(n)){ agFollowMark(raw, stKey); return; }
+    }
+    // 5.8) 资质认证查询（证书 / 试验报告 / 3C …）
+    if(/证书|资质|3c|试验报告|检测报告|测试报告|外贸证书|公司证书|认证/.test(n)){ agCertReply(raw, n); return; }
+    // 5.9) 客户跟进明细查询
+    if(/跟进|客户记录|成交|流失|复盘|跟进明细|报价记录/.test(n)){ agFollowReply(raw, n); return; }
     // 6) 系列清单
     if(/哪些系列|有哪些系列|系列列表|9大系列|八大系列/.test(n)){
       agSay('<div class="ag-h">平台系列</div>' + agSeriesListText()); return;
@@ -5517,8 +5710,9 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     agSay(agCapabilities());
     var quick = document.getElementById("agQuick");
     var qs = ["迎春的插孔是什么材质", "春光系列有哪些卖点", "连城的防雷参数",
-              "迎春 6位10A新国标孔 双断开关 1.5平方3米线16A欧标插头 帮我报价",
-              "生成报价单", "10A新国标扁五孔多少钱", "计价规则是什么", "你能做什么"];
+              "迎春 6位10A新国标孔 双断开关 1.5平方3米线16A欧标插头 含税含运 100条 帮我报价",
+              "生成专票合同", "迎春有哪些证书", "最近有哪些跟进记录",
+              "10A新国标扁五孔多少钱", "计价规则是什么", "你能做什么"];
     quick.innerHTML = qs.map(function(q){ return '<button class="ag-q" data-q="' + escHtml(q) + '">' + escHtml(q) + '</button>'; }).join("");
   }
   function openAgentView(){
@@ -5558,7 +5752,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     var act = t.getAttribute("data-ag"), sid = t.getAttribute("data-sid");
     if(act === "copy"){
       if(!agLast || !agLast.rows.length){ toast("先让我报一次价，再复制"); return; }
-      var txt = agConfigText(agLast.rows[0].af, agLast.rows[0].sid);
+      var txt = agConfigText(agLast.rows[0].af, agLast.rows[0].sid, { qty:(agLast.qty||0), taxNote:(agLast.taxNote||"") });
       function ok(){ toast("已复制配置 ✓"); }
       if(navigator.clipboard && navigator.clipboard.writeText){
         navigator.clipboard.writeText(txt).then(ok, function(){
@@ -5592,17 +5786,42 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     }
     if(act === "doc"){
       // 若本次会话已算出价格，直接把明细写进文档；否则仅打开文档页
+      var dtD = t.getAttribute("data-dt") || "quote";
+      if(dtD !== "special" && dtD !== "contract" && dtD !== "quote") dtD = "quote";
       if(agLast && agLast.rows && agLast.rows.length){
         var rowD = null;
         for(var j=0;j<agLast.rows.length;j++){ if(agLast.rows[j].sid === sid){ rowD = agLast.rows[j]; break; } }
         if(!rowD) rowD = agLast.rows[0];
-        docPushFromAgent(rowD.sid, rowD.af, rowD.total, rowD.prof);
-        toast("已把「" + rowD.series + "」写入文档草稿（合计 " + agMoney(rowD.total) + "）");
+        var tierD = qtyTier(agLast.qty || 0);
+        docPushFromAgent(rowD.sid, rowD.af, rowD.total, rowD.prof,
+          { qty:(agLast.qty||0), base:rowD.total, taxNote:(agLast.taxNote||""), docType:dtD });
+        toast("已把「" + rowD.series + "」写入"
+          + (dtD === "special" ? "专票合同" : (dtD === "contract" ? "合同" : "报价单")) + "草稿"
+          + (tierD ? "（" + (agLast.qty||0) + " 条 " + qtyRateText(tierD) + " = " + agMoney(applyQtyTier(rowD.total, tierD)) + "）" : "（未给数量，金额留空）"));
       } else if(sid){
-        docState.seriesId = sid; saveDocState();
+        docState.seriesId = sid; docState.docType = dtD; saveDocState();
+      } else {
+        docState.docType = dtD; saveDocState();
       }
       closeAgentView();
       goPage("#/docs");
+      return;
+    }
+    if(act === "certs"){
+      closeAgentView();
+      goPage("#/certs");
+      return;
+    }
+    if(act === "follow"){
+      closeAgentView();
+      goPage("#/follow");
+      return;
+    }
+    if(act === "certdl"){
+      var fdl = t.getAttribute("data-file"), itemDl = null;
+      for(var ci=0;ci<certList.length;ci++){ if(certList[ci].file === fdl){ itemDl = certList[ci]; break; } }
+      if(itemDl) certDownload(itemDl);
+      else toast("没找到这个文件，请进资质认证页查看");
       return;
     }
   });
