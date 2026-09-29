@@ -5936,9 +5936,9 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   function followQuoteRecord(){
     var snap = followQuoteSnap();
     if(!snap) return;
-    var last = followItems[0];
-    if(last && last.st === "draft" && last.sig === snap.sig && (Date.now() - last.ts) < FOLLOW_KEEP_MS){
-      last.ts = Date.now(); last.amount = snap.amount; last.summary = snap.summary; last.profile = snap.profile;
+    var hit = followFindDraft("quote", snap.sig, null);
+    if(hit){
+      hit.ts = Date.now(); hit.amount = snap.amount; hit.summary = snap.summary; hit.profile = snap.profile;
       followSave();
       return;
     }
