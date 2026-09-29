@@ -810,6 +810,8 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
 .ag-acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
 .ag-act{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;color:var(--primary-700);cursor:pointer}
 .ag-act:hover{background:var(--primary);border-color:var(--primary);color:#fff}
+.ag-clr{background:transparent;border:1px solid var(--line);border-radius:7px;padding:3px 9px;font:inherit;font-size:12px;color:var(--ink-mute);cursor:pointer;margin-right:8px;white-space:nowrap}
+.ag-clr:hover{border-color:var(--primary);color:var(--primary)}
 .ag-quick{display:flex;gap:7px;flex-wrap:wrap;padding:8px 0 9px;border-top:1px dashed var(--line)}
 .ag-q{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;font-weight:600}
 .ag-q:hover{border-color:var(--primary);color:var(--primary-700);background:var(--primary-100)}
@@ -1654,7 +1656,8 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
       返回
     </button>
-    <div class="t">智能助手<small>本地规则版 · 自动报价 / 自动表格 / 站内问答</small></div>
+    <div class="t">智能助手<small>本地规则版 · 报价 / 三种文档 / 资质与跟进查询</small></div>
+    <button class="ag-clr" id="agClear" title="清空对话记录（可教记忆不受影响）">清空对话</button>
     <div class="sid" id="agentSid">会话 --</div>
   </div>
   <div class="qw-body" style="max-width:900px">
@@ -5167,6 +5170,26 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       + '· <b>系列适配</b>：识别结果若在某系列不可用，会自动换同族同电流款；无同族款则跳过并提示手动选择，绝不降级规格\n'
       + '<div class="ag-note">需要我按指定型材或指定总长算，直接说「用 2UT」或「总长 500mm」。</div>';
   }
+  // 对话记录持久化：助手是各模块的入口，去文档页生成完再回来不该丢上下文
+  var AG_CHAT_KEY = "demu_agent_chat_v1";
+  function saveAgChat(){
+    try{
+      var chat = document.getElementById("agChat");
+      if(!chat) return;
+      var box = document.createElement("div");
+      box.innerHTML = chat.innerHTML;
+      // 操作按钮不存：重进后 agLast 已失效，点了只会提示"先报一次价"，反而误导
+      var acts = box.querySelectorAll(".ag-acts");
+      for(var i=0;i<acts.length;i++){ acts[i].parentNode.removeChild(acts[i]); }
+      // 只保留最近 30 条，避免无限增长
+      var msgs = box.querySelectorAll(".ag-msg");
+      for(var j=0;j<msgs.length-30;j++){ msgs[j].parentNode.removeChild(msgs[j]); }
+      localStorage.setItem(AG_CHAT_KEY, box.innerHTML);
+    }catch(e){}
+  }
+  function loadAgChat(){
+    try{ var v = localStorage.getItem(AG_CHAT_KEY); return (v && v.indexOf("ag-msg") > -1) ? v : ""; }catch(e){ return ""; }
+  }
   function agSay(html, acts){
     var chat = document.getElementById("agChat");
     var d = document.createElement("div");
@@ -5174,6 +5197,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     d.innerHTML = '<div class="ag-av">AI</div><div class="ag-bub">' + html + (acts && acts.length ? '<div class="ag-acts">' + acts.join("") + '</div>' : '') + '</div>';
     chat.appendChild(d);
     chat.scrollTop = chat.scrollHeight;
+    saveAgChat();
   }
   function agAsk(text){
     var chat = document.getElementById("agChat");
@@ -5182,6 +5206,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     d.innerHTML = '<div class="ag-av">我</div><div class="ag-bub">' + escHtml(text) + '</div>';
     chat.appendChild(d);
     chat.scrollTop = chat.scrollHeight;
+    saveAgChat();
   }
   // 文本里是否明确写了系列名（只有明确写了才把报价限定到该系列，否则对比全部系列）
   function agSeriesMentioned(raw){
@@ -5269,6 +5294,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     var direct = docSeriesList().filter(function(s){ return s.type !== "custom"; });
     if(direct.length) html += '<div class="ag-note">按型号报价、不参与自动算价：' + escHtml(direct.map(function(s){ return s.name; }).join("、")) + '</div>';
     agLast = { rows:rows, auto:auto, qty:qty, taxNote:(res.taxNote || "") };
+    try{ followAgentRecord(first.sid, first.af, first.total, qty, res.taxNote || "", first.prof); }catch(e){}
     var acts = ['<button class="ag-act" data-ag="copy">复制配置</button>',
                 '<button class="ag-act" data-ag="quote" data-sid="' + first.sid + '">填入报价工作台</button>',
                 '<button class="ag-act" data-ag="doc" data-dt="quote" data-sid="' + first.sid + '">生成报价单</button>',
@@ -5418,6 +5444,34 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
      让助手能直接「生成」（报价单/合同/专票合同）与「查询」（产品知识/资质认证/客户跟进），
      并支持数量阶梯倍率、含税含运识别；查询类结果都带一个直达按钮。 */
   var AG_STATUS = { draft:"草稿", sent:"已发出", won:"已成交", lost:"已流失" };
+
+  // 助手报价 → 同样在「客户跟进明细」留痕
+  //（原先只有报价平台会留痕，助手报完价跟进里什么都没有，复盘会漏）
+  function followAgentRecord(sid, af, base, qty, taxNote, profName){
+    var parts = [];
+    (af.sockets ||[]).forEach(function(it){ parts.push((it.qty||1) + "位" + it.name); });
+    (af.funcs   ||[]).forEach(function(it){ parts.push((it.qty||1) + "个" + it.name); });
+    (af.boxes   ||[]).forEach(function(it){ parts.push((it.qty||1) + "个" + it.name); });
+    (af.cables  ||[]).forEach(function(it){ parts.push((it.qty||1) + "米" + it.name); });
+    (af.plugs   ||[]).forEach(function(it){ parts.push((it.qty||1) + "个" + it.name); });
+    (af.specials||[]).forEach(function(it){ parts.push((it.qty||1) + "个" + it.name); });
+    if(taxNote) parts.push(taxNote);
+    var prof = profName || af.profile || "";
+    var t = qtyTier(qty);
+    var snap = {
+      seriesId: sid, seriesName: followSeriesName(sid), profile: prof,
+      summary: (qty > 0 ? qty + "条 · " : "") + parts.join("·"),
+      amount: t ? applyQtyTier(base, t) : base,
+      sig: normWord("agent|" + sid + "|" + (qty > 0 ? qty + "条" : "") + "|" + prof + "|" + parts.join("|"))
+    };
+    var hit = followFindDraft("quote", snap.sig, null);
+    if(hit){
+      hit.ts = Date.now(); hit.amount = snap.amount; hit.summary = snap.summary; hit.profile = snap.profile;
+      followSave();
+      return;
+    }
+    followPush(snap, "quote", "draft");
+  }
 
   // 资质认证：按系列/类别筛选后作答（列表异步加载，首次会自动拉取 certs.json）
   function agCertReply(raw, n){
@@ -5701,20 +5755,37 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     el.value = ""; el.style.height = "auto";
     try{ agHandle(v); }catch(e){ agSay("抱歉，处理时出错了：" + escHtml(e.message)); }
   }
-  function agWelcome(){
+  function agQuickList(){
+    return ["迎春的插孔是什么材质", "春光系列有哪些卖点", "连城的防雷参数",
+            "迎春 6位10A新国标孔 双断开关 1.5平方3米线16A欧标插头 含税含运 100条 帮我报价",
+            "生成专票合同", "迎春有哪些证书", "最近有哪些跟进记录",
+            "10A新国标扁五孔多少钱", "计价规则是什么", "你能做什么"];
+  }
+  function agWelcome(force){
     var chat = document.getElementById("agChat");
+    var quick = document.getElementById("agQuick");
+    var saved = force ? "" : loadAgChat();
+    if(saved){
+      // 有历史对话就直接接着聊（助手是各模块入口，去文档页生成完回来不该丢上下文）
+      chat.innerHTML = saved;
+      chat.scrollTop = chat.scrollHeight;
+      quick.innerHTML = agQuickList().map(function(q){ return '<button class="ag-q" data-q="' + escHtml(q) + '">' + escHtml(q) + '</button>'; }).join("");
+      return;
+    }
     chat.innerHTML = "";
     agSay('<div class="ag-h">你好，我是按你规则工作的智能助手</div>'
-      + '我可以<b>自动报价</b>、<b>自动出报价单 / 合同表格</b>，也能回答站内的产品与规则问题。'
+      + '我可以<b>自动报价</b>（带上数量就算阶梯最终价）、<b>生成报价单 / 合同 / 专票合同</b>，'
+      + '也能<b>查资质认证</b>、<b>查客户跟进</b>，以及回答产品与规则问题。'
       + '<div class="ag-note">全部在本机按平台规则运行，不联网、无费用。</div>');
     agSay(agCapabilities());
-    var quick = document.getElementById("agQuick");
-    var qs = ["迎春的插孔是什么材质", "春光系列有哪些卖点", "连城的防雷参数",
-              "迎春 6位10A新国标孔 双断开关 1.5平方3米线16A欧标插头 含税含运 100条 帮我报价",
-              "生成专票合同", "迎春有哪些证书", "最近有哪些跟进记录",
-              "10A新国标扁五孔多少钱", "计价规则是什么", "你能做什么"];
-    quick.innerHTML = qs.map(function(q){ return '<button class="ag-q" data-q="' + escHtml(q) + '">' + escHtml(q) + '</button>'; }).join("");
+    quick.innerHTML = agQuickList().map(function(q){ return '<button class="ag-q" data-q="' + escHtml(q) + '">' + escHtml(q) + '</button>'; }).join("");
   }
+  // 清空对话（可教记忆不受影响）
+  if(document.getElementById("agClear")) document.getElementById("agClear").addEventListener("click", function(){
+    try{ localStorage.removeItem(AG_CHAT_KEY); }catch(e){}
+    agWelcome(true);
+    toast("已清空对话记录 ✓");
+  });
   function openAgentView(){
     document.getElementById("agentSid").textContent = "会话 " + session.id;
     loadAgMem();
@@ -5753,6 +5824,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     if(act === "copy"){
       if(!agLast || !agLast.rows.length){ toast("先让我报一次价，再复制"); return; }
       var txt = agConfigText(agLast.rows[0].af, agLast.rows[0].sid, { qty:(agLast.qty||0), taxNote:(agLast.taxNote||"") });
+      followMarkSent("quote");   // 配置被拿走 = 已发出，与报价平台口径一致
       function ok(){ toast("已复制配置 ✓"); }
       if(navigator.clipboard && navigator.clipboard.writeText){
         navigator.clipboard.writeText(txt).then(ok, function(){
