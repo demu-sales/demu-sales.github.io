@@ -569,6 +569,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
   /* 专票合同：整份压到一页 A4 */
   #docsView .doc-sheet.sp{padding:0 !important}
   #docsView .doc-sheet.sp .sp-clauses p,#docsView .doc-sheet.sp .sp-sign{page-break-inside:avoid}
+  #docsView .doc-sheet.sp .sp-fill .doc-line{border-bottom-color:#cfa9ab !important}
 }
 
 @page{size:A4;margin:10mm}
@@ -578,7 +579,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .doc-sheet.sp .dh-name{font-size:17px}
 .doc-sheet.sp .doc-title{margin:6px 0 1px;font-size:17px;letter-spacing:5px}
 .doc-sheet.sp .doc-sub{margin-bottom:5px;font-size:10px}
-.sp-fill{border:1px dashed #cfa9ab;border-radius:6px;padding:5px 8px;margin-bottom:6px;background:#fdf8f8}
+.sp-fill{border:1px dashed #cfa9ab;border-radius:6px;padding:4px 8px;margin-bottom:6px;background:#fdf8f8}
 .sp-fill-h{font-size:10px;font-weight:800;color:#881C21;margin-bottom:3px;letter-spacing:.2px}
 .sp-fill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 14px}
 .sp-f{display:flex;align-items:baseline;gap:5px;min-width:0}
@@ -586,31 +587,33 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .sp-u{flex:0 0 auto;font-size:10px;color:#777}
 .sp-f .doc-line{flex:1 1 auto;min-width:0}
 .sp-f.sp-wide{grid-column:1/-1;align-items:flex-start}
-.sp-ta{resize:none;line-height:1.35;padding:1px 0;height:22px;overflow:hidden}
+.sp-ta{resize:none;line-height:1.35;padding:1px 0;height:18px;overflow:hidden}
+.sp-w2{grid-column:span 2}
+.sp-txt{display:block;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.34;min-height:12px}
 .sp-sel{cursor:pointer}
-.sp-parties{display:grid;grid-template-columns:1fr 1fr;gap:1px 18px;font-size:10.5px;margin:3px 0}
+.sp-parties{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;font-size:10.5px;margin:2px 0}
 .sp-parties b{color:#555;font-weight:600}
-.sp-pre{margin:3px 0 4px;font-size:10px;color:#333;text-align:justify}
-.sp-h{font-size:10.5px;font-weight:800;color:#5c1417;margin:5px 0 2px}
-.sp-table th,.sp-table td{padding:2px 4px;font-size:9.5px}
+.sp-pre{margin:2px 0 3px;font-size:9.5px;color:#333;text-align:justify}
+.sp-h{font-size:10.5px;font-weight:800;color:#5c1417;margin:3px 0 2px}
+.sp-table th,.sp-table td{padding:1px 4px;font-size:9.5px}
 .sp-table .sp-name{font-weight:600}
 .sp-table .sp-empty{text-align:center;color:#999;padding:10px}
 .sp-unit{font-variant-numeric:tabular-nums}
 .sp-total{display:flex;justify-content:flex-end;align-items:baseline;gap:16px;margin-top:3px;text-align:right;font-size:11.5px}
 .sp-total b{font-size:13px;color:#881C21}
 .sp-total .cap{margin:0;font-size:10px;color:#555}
-.sp-tax{display:flex;flex-wrap:wrap;gap:3px 20px;margin-top:4px;padding:3px 8px;background:#faf6f6;border:1px solid #eadcdc;border-radius:5px;font-size:10px;color:#555}
+.sp-tax{display:flex;flex-wrap:wrap;gap:3px 20px;margin-top:3px;padding:2px 8px;background:#faf6f6;border:1px solid #eadcdc;border-radius:5px;font-size:10px;color:#555}
 .sp-tax b{color:#881C21}
 .sp-param,.sp-conf{margin-top:3px;font-size:10px;color:#333;white-space:pre-wrap;text-align:justify}
 .sp-param b,.sp-conf b{color:#555;font-weight:600}
 .sp-blank{color:#aaa;letter-spacing:1px}
-.sp-clauses{margin:4px 0 0;font-size:9.5px;line-height:1.42;color:#333;text-align:justify}
+.sp-clauses{margin:3px 0 0;font-size:9.5px;line-height:1.38;color:#333;text-align:justify}
 .sp-clauses p{margin:0 0 1px}
 .sp-clauses b{color:#5c1417;font-weight:700}
-.sp-sign{margin-top:6px}
+.sp-sign{margin-top:5px}
 .sp-sign-t{width:100%;border-collapse:collapse;font-size:10px}
 .doc-sheet .sp-sign-t th{background:#f4ecec;border:1px solid #bbb;padding:3px 5px;font-size:10px;color:#5c1417;text-align:center}
-.sp-sign-t td{border:1px solid #bbb;padding:4px 5px;vertical-align:middle}
+.sp-sign-t td{border:1px solid #bbb;padding:3px 5px;vertical-align:middle}
 
 /* ---------- 产品知识 ---------- */
 .kb-panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow-sm)}
@@ -4465,7 +4468,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     { k:"supRep",   l:"甲方代表人",   ph:"李月" },
     { k:"supTel",   l:"甲方电话",     ph:"17757049073" },
     { k:"shipMode", l:"交货方式",     type:"select", opts:["物流配送","快递","自提"] },
-    { k:"shipAddr", l:"送达地址",     ph:"省市区 + 详细地址 + 收货人" },
+    { k:"shipAddr", l:"送达地址",     ph:"省市区 + 详细地址 + 收货人", w:2 },
     { k:"taxRate",  l:"增值税税率",   ph:"13", unit:"%" }
   ];
   var SP_DEF = { supRep:"李月", supTel:"17757049073", taxRate:"13", shipMode:"物流配送" };
@@ -4528,7 +4531,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       } else {
         inp = '<input class="doc-line" data-sp="' + escAttr(f.k) + '" value="' + escAttr(v) + '" placeholder="' + escAttr(f.ph || "") + '">';
       }
-      h += '<label class="sp-f"><span class="sp-k">' + escHtml(f.l) + '</span>' + inp
+      h += '<label class="sp-f' + (f.w === 2 ? " sp-w2" : "") + '"><span class="sp-k">' + escHtml(f.l) + '</span>' + inp
         + (f.unit ? '<span class="sp-u">' + escHtml(f.unit) + '</span>' : '') + '</label>';
     });
     h += '</div>'
@@ -4545,7 +4548,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
       var unit = q > 0 ? (amt / q) : amt;
       rows += '<tr>'
         + '<td class="sp-name">PDU机柜插座</td>'
-        + '<td><input class="doc-cell" data-i="' + i + '" data-f="spec" value="' + escAttr(it.spec || "") + '" placeholder="系列 / 型材 / 插孔 / 功能"></td>'
+        + '<td><div class="doc-cell sp-txt" contenteditable="true" data-i="' + i + '" data-f="spec">' + escHtml(it.spec || "") + '</div></td>'
         + '<td class="c">条</td>'
         + '<td class="c"><input class="doc-cell c" data-i="' + i + '" data-f="qty" value="' + escAttr(it.qty || "") + '" placeholder="1"></td>'
         + '<td class="r sp-unit" id="spu' + i + '">' + docFmt(unit) + '</td>'
@@ -4556,9 +4559,9 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     });
     if(!rows) rows = '<tr><td colspan="8" class="sp-empty">暂无明细：点上方「从报价工作台带入」或「+ 新增明细行」</td></tr>';
     return '<table class="sp-table"><thead><tr>'
-      + '<th style="width:14%">产品名称</th><th style="width:36%">规格型号</th><th style="width:6%">单位</th>'
-      + '<th style="width:8%">数量</th><th style="width:11%">单价(元)</th><th style="width:14%">金额含税(元)</th>'
-      + '<th style="width:11%">备注</th><th class="noprint"></th>'
+      + '<th style="width:10%">产品名称</th><th style="width:45%">规格型号</th><th style="width:5%">单位</th>'
+      + '<th style="width:7%">数量</th><th style="width:10%">单价(元)</th><th style="width:12%">金额含税(元)</th>'
+      + '<th style="width:9%">备注</th><th class="noprint"></th>'
       + '</tr></thead><tbody>' + rows + '</tbody></table>'
       + '<div class="sp-total">合计金额（小写）：<b id="docTotalVal">¥' + docFmt(total) + '</b>'
       + '<span class="cap" id="docTotalCap" data-sp="1">合计金额（大写）：' + docCap(total) + '</span></div>';
@@ -4566,7 +4569,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   function docSpTaxRow(){
     var tx = docTaxSplit();
     return '<div class="sp-tax">'
-      + '<span>增值税税率 <b>' + docFmt(tx.rate) + '%</b></span>'
+      + '<span>增值税税率 <b>' + tx.rate + '%</b></span>'
       + '<span>不含税总金额 <b id="spNet">¥' + docFmt(tx.net) + '</b></span>'
       + '<span>增值税税额 <b id="spTax">¥' + docFmt(tx.tax) + '</b></span>'
       + '<span>价税合计 <b id="spGross">¥' + docFmt(tx.gross) + '</b></span>'
@@ -4625,7 +4628,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
         + "　单价：" + docFmt(q > 0 ? amt / q : amt) + "　金额含税：" + docFmt(amt) + "　备注：" + (it.spnote || "含税含运"));
     });
     L.push("合计金额（小写）：¥" + docFmt(tx.gross) + "　（大写：" + docCap(tx.gross) + "）");
-    L.push("增值税税率：" + docFmt(tx.rate) + "%　不含税总金额：¥" + docFmt(tx.net) + "　增值税税额：¥" + docFmt(tx.tax) + "　价税合计：¥" + docFmt(tx.gross));
+    L.push("增值税税率：" + tx.rate + "%　不含税总金额：¥" + docFmt(tx.net) + "　增值税税额：¥" + docFmt(tx.tax) + "　价税合计：¥" + docFmt(tx.gross));
     L.push("参数：" + (docState.params || ""));
     L.push("配置：" + (docState.conf || SP_CONF_DEF));
     L.push("— 条款 —");
@@ -4853,7 +4856,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     if(!t || !t.classList || !t.classList.contains("doc-cell")) return;
     var i = parseInt(t.getAttribute("data-i"), 10), f = t.getAttribute("data-f");
     if(isNaN(i) || !f || !docState.items[i]) return;
-    docState.items[i][f] = t.value;
+    docState.items[i][f] = t.classList.contains("sp-txt") ? t.textContent : t.value;
     saveDocState();
     if(f === "amt" || f === "qty") docRefreshTotals(); else docUpdateHint();
   });
