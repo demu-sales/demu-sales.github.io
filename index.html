@@ -5950,10 +5950,9 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   function followQtyRefresh(){
     var snap = followQuoteSnap();
     if(!snap) return;
-    var last = followItems[0];
-    if(last && last.st === "draft" && last.src === "quote" && last.seriesId === snap.seriesId
-       && (Date.now() - last.ts) < FOLLOW_KEEP_MS){
-      last.amount = snap.amount; last.summary = snap.summary; last.sig = snap.sig; last.ts = Date.now();
+    var hit = followFindDraft("quote", null, snap.seriesId);
+    if(hit){
+      hit.amount = snap.amount; hit.summary = snap.summary; hit.sig = snap.sig; hit.ts = Date.now();
       followSave();
     }
   }
@@ -5962,13 +5961,26 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   function followDocRecord(){
     var snap = followDocSnap();
     if(!snap) return;
-    var last = followItems[0];
-    if(last && last.st === "draft" && last.src === "doc" && last.sig === snap.sig){
-      last.ts = Date.now(); last.amount = snap.amount; last.summary = snap.summary;
+    var hit = followFindDraft("doc", snap.sig, null);
+    if(hit){
+      hit.ts = Date.now(); hit.amount = snap.amount; hit.summary = snap.summary;
+      hit.customer = snap.customer || hit.customer;
       followSave();
       return;
     }
     followPush(snap, "doc", "draft");
+  }
+  // 在最近的草稿里找同签名的一条（列表按时间倒序，越界即可停）
+  function followFindDraft(src, sig, seriesId){
+    for(var i = 0; i < followItems.length; i++){
+      var it = followItems[i];
+      if(it.st !== "draft" || it.src !== src) continue;
+      if(sig != null && it.sig !== sig) continue;
+      if(seriesId != null && it.seriesId !== seriesId) continue;
+      if((Date.now() - it.ts) >= FOLLOW_KEEP_MS) break;
+      return it;
+    }
+    return null;
   }
   // 发出：把最近的草稿升级为「已发出」；若没有草稿，就用当前状态补一条已发出
   function followMarkSent(src){
