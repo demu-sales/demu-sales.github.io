@@ -2807,13 +2807,21 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     // 手动修改"客户指定总长" → 保存并立即按新总长核算
     if(t.classList && t.classList.contains("pp-len")){ qState.lenSpec = t.value.trim(); refreshAllPrices(); }
     // 手动填写数量 → 保存并立即按阶梯倍率重算最终价
-    if(t.classList && t.classList.contains("pp-qty")){ qState.qtyBySeries[t.getAttribute("data-sid")] = t.value.trim(); refreshAllPrices(); }
+    if(t.classList && t.classList.contains("pp-qty")){
+      qState.qtyBySeries[t.getAttribute("data-sid")] = t.value.trim();
+      refreshAllPrices();
+      followQtyRefresh();
+    }
   });
   // 总长/数量输入过程中的实时核算
   document.getElementById("matchResult").addEventListener("input", function(e){
     var t = e.target;
     if(t && t.classList && t.classList.contains("pp-len")){ qState.lenSpec = t.value.trim(); refreshAllPrices(); }
-    if(t && t.classList && t.classList.contains("pp-qty")){ qState.qtyBySeries[t.getAttribute("data-sid")] = t.value.trim(); refreshAllPrices(); }
+    if(t && t.classList && t.classList.contains("pp-qty")){
+      qState.qtyBySeries[t.getAttribute("data-sid")] = t.value.trim();
+      refreshAllPrices();
+      followQtyRefresh();
+    }
   });
 
   /* ---------- 功能模块组合弹层 ---------- */
@@ -5903,6 +5911,20 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     }
     followPush(snap, "quote", "draft");
   }
+  // 数量变化 → 就地刷新最近那条同系列「报价草稿」的金额与摘要
+  //（「立即匹配」时数量还是空的，草稿先记基础价；填完数量必须把它改写成最终价，
+  //  否则跟进明细里的「已报价金额」会一直记成基础价）
+  function followQtyRefresh(){
+    var snap = followQuoteSnap();
+    if(!snap) return;
+    var last = followItems[0];
+    if(last && last.st === "draft" && last.src === "quote" && last.seriesId === snap.seriesId
+       && (Date.now() - last.ts) < FOLLOW_KEEP_MS){
+      last.amount = snap.amount; last.summary = snap.summary; last.sig = snap.sig; last.ts = Date.now();
+      followSave();
+    }
+  }
+
   // 销售文档：记草稿
   function followDocRecord(){
     var snap = followDocSnap();
