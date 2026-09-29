@@ -571,44 +571,46 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
   #docsView .doc-sheet.sp .sp-clauses p,#docsView .doc-sheet.sp .sp-sign{page-break-inside:avoid}
 }
 
-@page{size:A4}
+@page{size:A4;margin:10mm}
 /* ---------- 销售文档 · 专票合同（供货合同 · 增值税专用发票） ---------- */
-.doc-stage .doc-sheet.sp{font-size:11px;line-height:1.5;padding:12mm 13mm}
-.doc-sheet.sp .doc-title{margin:11px 0 2px;font-size:19px;letter-spacing:5px}
-.doc-sheet.sp .doc-sub{margin-bottom:8px}
-.sp-fill{border:1px dashed #cfa9ab;border-radius:6px;padding:7px 9px;margin-bottom:9px;background:#fdf8f8}
-.sp-fill-h{font-size:10.5px;font-weight:800;color:#881C21;margin-bottom:5px;letter-spacing:.2px}
-.sp-fill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px 14px}
+.doc-stage .doc-sheet.sp{font-size:11px;line-height:1.42;padding:10mm 12mm}
+.doc-sheet.sp .doc-head{padding-bottom:6px}
+.doc-sheet.sp .dh-name{font-size:17px}
+.doc-sheet.sp .doc-title{margin:6px 0 1px;font-size:17px;letter-spacing:5px}
+.doc-sheet.sp .doc-sub{margin-bottom:5px;font-size:10px}
+.sp-fill{border:1px dashed #cfa9ab;border-radius:6px;padding:5px 8px;margin-bottom:6px;background:#fdf8f8}
+.sp-fill-h{font-size:10px;font-weight:800;color:#881C21;margin-bottom:3px;letter-spacing:.2px}
+.sp-fill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 14px}
 .sp-f{display:flex;align-items:baseline;gap:5px;min-width:0}
 .sp-k{flex:0 0 auto;font-size:10px;font-weight:700;color:#555;white-space:nowrap;min-width:56px}
 .sp-u{flex:0 0 auto;font-size:10px;color:#777}
 .sp-f .doc-line{flex:1 1 auto;min-width:0}
 .sp-f.sp-wide{grid-column:1/-1;align-items:flex-start}
-.sp-ta{resize:none;line-height:1.45;padding:1px 0}
+.sp-ta{resize:none;line-height:1.35;padding:1px 0;height:22px;overflow:hidden}
 .sp-sel{cursor:pointer}
-.sp-parties{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;font-size:11px;margin:6px 0}
+.sp-parties{display:grid;grid-template-columns:1fr 1fr;gap:1px 18px;font-size:10.5px;margin:3px 0}
 .sp-parties b{color:#555;font-weight:600}
-.sp-pre{margin:5px 0 6px;font-size:10.5px;color:#333;text-align:justify}
-.sp-h{font-size:11px;font-weight:800;color:#5c1417;margin:7px 0 3px}
-.sp-table th,.sp-table td{padding:3px 5px;font-size:10px}
+.sp-pre{margin:3px 0 4px;font-size:10px;color:#333;text-align:justify}
+.sp-h{font-size:10.5px;font-weight:800;color:#5c1417;margin:5px 0 2px}
+.sp-table th,.sp-table td{padding:2px 4px;font-size:9.5px}
 .sp-table .sp-name{font-weight:600}
 .sp-table .sp-empty{text-align:center;color:#999;padding:10px}
 .sp-unit{font-variant-numeric:tabular-nums}
-.sp-total{display:flex;justify-content:flex-end;align-items:baseline;gap:16px;margin-top:5px;text-align:right;font-size:12px}
-.sp-total b{font-size:14px;color:#881C21}
-.sp-total .cap{margin:0;font-size:10.5px;color:#555}
-.sp-tax{display:flex;flex-wrap:wrap;gap:4px 20px;margin-top:6px;padding:4px 9px;background:#faf6f6;border:1px solid #eadcdc;border-radius:5px;font-size:10.5px;color:#555}
+.sp-total{display:flex;justify-content:flex-end;align-items:baseline;gap:16px;margin-top:3px;text-align:right;font-size:11.5px}
+.sp-total b{font-size:13px;color:#881C21}
+.sp-total .cap{margin:0;font-size:10px;color:#555}
+.sp-tax{display:flex;flex-wrap:wrap;gap:3px 20px;margin-top:4px;padding:3px 8px;background:#faf6f6;border:1px solid #eadcdc;border-radius:5px;font-size:10px;color:#555}
 .sp-tax b{color:#881C21}
-.sp-param,.sp-conf{margin-top:5px;font-size:10.5px;color:#333;white-space:pre-wrap;text-align:justify}
+.sp-param,.sp-conf{margin-top:3px;font-size:10px;color:#333;white-space:pre-wrap;text-align:justify}
 .sp-param b,.sp-conf b{color:#555;font-weight:600}
 .sp-blank{color:#aaa;letter-spacing:1px}
-.sp-clauses{margin:6px 0 0;font-size:10px;line-height:1.5;color:#333;text-align:justify}
-.sp-clauses p{margin:0 0 2px}
+.sp-clauses{margin:4px 0 0;font-size:9.5px;line-height:1.42;color:#333;text-align:justify}
+.sp-clauses p{margin:0 0 1px}
 .sp-clauses b{color:#5c1417;font-weight:700}
-.sp-sign{margin-top:10px}
-.sp-sign-t{width:100%;border-collapse:collapse;font-size:10.5px}
-.doc-sheet .sp-sign-t th{background:#f4ecec;border:1px solid #bbb;padding:3px 6px;font-size:10.5px;color:#5c1417;text-align:center}
-.sp-sign-t td{border:1px solid #bbb;padding:5px 6px;height:20px;vertical-align:middle}
+.sp-sign{margin-top:6px}
+.sp-sign-t{width:100%;border-collapse:collapse;font-size:10px}
+.doc-sheet .sp-sign-t th{background:#f4ecec;border:1px solid #bbb;padding:3px 5px;font-size:10px;color:#5c1417;text-align:center}
+.sp-sign-t td{border:1px solid #bbb;padding:4px 5px;vertical-align:middle}
 
 /* ---------- 产品知识 ---------- */
 .kb-panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow-sm)}
@@ -4487,7 +4489,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     var c = String(docState.company || "").split(/[·|\n]/).map(function(x){ return x.trim(); }).filter(function(x){ return !!x; })[0];
     return c || "宁波德木电器有限公司";
   }
-  function docSpSeries(){ var n = docSeriesName(docState.seriesId); return n ? (n + "系列") : "—"; }
+  function docSpSeries(){ return docSeriesName(docState.seriesId) || "—"; }
   // 税务拆分：专票按含税价倒算（不含税 + 税额 = 价税合计 = 含税合计）
   function docTaxSplit(){
     var gross = docTotal();
