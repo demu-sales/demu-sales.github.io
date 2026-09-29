@@ -2010,7 +2010,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   var quoteView = document.getElementById("quoteView");
   var matchResult = document.getElementById("matchResult");
   var matchInput = document.getElementById("matchInput");
-  var qState = { series:null, hits:[], tried:false, unmatched:[], autoChecked:false, lenSpec:"", qtySpec:"", taxNote:"", pendingAuto:null };
+  var qState = { series:null, hits:[], tried:false, unmatched:[], autoChecked:false, lenSpec:"", qtyBySeries:{}, taxNote:"", pendingAuto:null };
 
   function ph(){ return '<span class="ph">待填充</span>'; }
 
@@ -2523,7 +2523,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     var pricePanel = (s.type === "custom")
       ? '<div class="price-panel" data-sid="'+s.id+'" data-state="idle">'
           + '<div class="pp-head"><span class="pp-t">报价核算</span><span class="pp-total" id="ppTotal_'+s.id+'">合计 ¥0.00</span></div>'
-          + '<div class="pp-qtyline">数量 <input class="pp-qty" data-sid="'+s.id+'" inputmode="numeric" type="number" min="1" step="1" placeholder="填数量" value="'+(qState.qtySpec && qState.series && qState.series.id === s.id ? qState.qtySpec : '')+'" title="按数量阶梯倍率计最终价：1–20 条 ×1.55 ｜ 21–50 条 ×1.45 ｜ 51–99 条 ×1.35 ｜ 100–199 条 ×1.25 ｜ 200–300 条 ×1.15 ｜ 301–500 条 ×1.10 ｜ 500 条以上 ×1.05"> 条 <em></em> <span class="pp-base">基础合计 ¥0.00</span></div>'
+          + '<div class="pp-qtyline">数量 <input class="pp-qty" data-sid="'+s.id+'" inputmode="numeric" type="number" min="1" step="1" placeholder="填数量" value="'+(qState.qtyBySeries[s.id] || '')+'" title="按数量阶梯倍率计最终价：1–20 条 ×1.55 ｜ 21–50 条 ×1.45 ｜ 51–99 条 ×1.35 ｜ 100–199 条 ×1.25 ｜ 200–300 条 ×1.15 ｜ 301–500 条 ×1.10 ｜ 500 条以上 ×1.05"> 条 <em></em> <span class="pp-base">基础合计 ¥0.00</span></div>'
           + '<div class="pp-note"></div>'
           + '<div class="pp-lenline">客户指定总长 <input class="pp-len" data-sid="'+s.id+'" inputmode="decimal" type="number" min="0" placeholder="自动（按模块累计）" value="'+(qState.lenSpec && qState.series && qState.series.id === s.id ? qState.lenSpec : '')+'" title="填写后型材按该总长核算（不再+42mm预留）；留空则按模块尺寸累计+42mm"> mm <em id="ppLenTip_'+s.id+'"></em></div>'
           + '<div class="pp-profline" id="ppProf_'+s.id+'">型材 未选择</div>'
@@ -2807,13 +2807,13 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
     // 手动修改"客户指定总长" → 保存并立即按新总长核算
     if(t.classList && t.classList.contains("pp-len")){ qState.lenSpec = t.value.trim(); refreshAllPrices(); }
     // 手动填写数量 → 保存并立即按阶梯倍率重算最终价
-    if(t.classList && t.classList.contains("pp-qty")){ qState.qtySpec = t.value.trim(); refreshAllPrices(); }
+    if(t.classList && t.classList.contains("pp-qty")){ qState.qtyBySeries[t.getAttribute("data-sid")] = t.value.trim(); refreshAllPrices(); }
   });
   // 总长/数量输入过程中的实时核算
   document.getElementById("matchResult").addEventListener("input", function(e){
     var t = e.target;
     if(t && t.classList && t.classList.contains("pp-len")){ qState.lenSpec = t.value.trim(); refreshAllPrices(); }
-    if(t && t.classList && t.classList.contains("pp-qty")){ qState.qtySpec = t.value.trim(); refreshAllPrices(); }
+    if(t && t.classList && t.classList.contains("pp-qty")){ qState.qtyBySeries[t.getAttribute("data-sid")] = t.value.trim(); refreshAllPrices(); }
   });
 
   /* ---------- 功能模块组合弹层 ---------- */
@@ -3991,6 +3991,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   function runMatch(){
     var text = matchInput.value.trim();
     if(!text){ toast("先粘贴或输入客户需求，再匹配～"); return; }
+    qState.qtyBySeries = {};   // 新的一笔报价 → 数量必须重填（数量决定阶梯倍率，沿用旧值会报错价）
     var res = autoAnalyze(text);
     qState.tried = true;
     qState.unmatched = res.unmatched || [];
@@ -5070,7 +5071,7 @@ mark{background:rgba(200,160,60,.38);color:inherit;border-radius:3px;padding:0 2
   function agApplyToQuote(sid, af){
     var s = getSeries(sid);
     qState.series = s; qState.hits = [s.name]; qState.tried = true;
-    qState.pendingAuto = null; qState.lenSpec = ""; qState.qtySpec = ""; qState.taxNote = "";
+    qState.pendingAuto = null; qState.lenSpec = ""; qState.qtyBySeries = {}; qState.taxNote = "";
     applyAutoToRow(s, af);
     renderResult(s, [s.name], true, (af._notes || []));
     setTimeout(function(){ applyAutoDropdowns(s); refreshAllPrices(); }, 60);
